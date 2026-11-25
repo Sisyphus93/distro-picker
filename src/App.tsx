@@ -22,7 +22,7 @@ import QuizChooser from "./quiz/QuizChooser";
 import QuizPage from "./quiz/QuizPage";
 import ResultsPage from "./results/ResultsPage";
 import CatalogPage from "./catalog/CatalogPage";
-import CompareStubPage from "./catalog/CompareStubPage";
+import ComparePage from "./catalog/ComparePage";
 
 function Brand() {
   return (
@@ -359,7 +359,7 @@ function App() {
           />
           <PageRoute path="/results" element={<ResultsPage />} />
           <PageRoute path="/catalog" element={<CatalogPage />} />
-          <PageRoute path="/compare" element={<CompareStubPage />} />
+          <PageRoute path="/compare" element={<ComparePage />} />
           <PageRoute path="/distros/:slug" element={<DistroPlaceholder />} />
           <PageRoute
             path="/methodology"

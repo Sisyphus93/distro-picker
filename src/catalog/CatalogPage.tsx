@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLayoutEffect, useMemo } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { SearchX } from "lucide-react";
 import {
   DISTROS,
@@ -27,6 +27,15 @@ import {
  */
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  useLayoutEffect(() => {
+    const scrollY = (location.state as { catalogScrollY?: unknown } | null)?.catalogScrollY;
+    if (typeof scrollY === "number" && Number.isFinite(scrollY) && scrollY >= 0) {
+      window.scrollTo(0, scrollY);
+    }
+    // Restore only when the catalog mounts, not on each filter change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const state = useMemo(
     () => parseCatalogViewState(searchParams),
     [searchParams],
