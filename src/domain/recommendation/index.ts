@@ -4,4 +4,4 @@
  * This is the v1 testing seam: quiz-derived `PreferenceProfile` plus the
  * curated distro dataset in, ranked qualitative recommendations out.
  */
-export { recommendDistros } from "./engine";
+export { recommendDistros, SCORING_RULES } from "./engine";

@@ -21,9 +21,9 @@ import {
   recommendDistros,
   type DistroProfile,
   type DistroRecommendation,
-  type FitLabel,
 } from "../domain";
 import DistroMark from "../components/DistroMark";
+import FitBadge from "../components/FitBadge";
 import {
   buildProfileOrigin,
   profileOriginState,
@@ -33,20 +33,6 @@ import {
   loadLastQuizRun,
   parseStoredQuizRun,
 } from "../quiz/quiz-run-store";
-
-const FIT_BADGE_CLASS: Record<FitLabel, string> = {
-  Strong: "fit-badge fit-badge--strong",
-  Good: "fit-badge fit-badge--good",
-  Partial: "fit-badge fit-badge--partial",
-};
-
-function FitBadge({ fit }: { fit: FitLabel }) {
-  return (
-    <span className={FIT_BADGE_CLASS[fit]} title={FIT_LABEL_MEANINGS[fit]}>
-      {fit} fit
-    </span>
-  );
-}
 
 function getCaveatMessage(
   rec: DistroRecommendation,
@@ -172,7 +158,8 @@ export default function ResultsPage() {
         <p className="results-lede">
           Based on your answers, here’s the distro we’d try first — and two
           close runners-up. No percentages, no black boxes: every reason below
-          traces back to something you told us.
+          traces back to something you told us.{" "}
+          <Link to="/methodology">How we score</Link>.
         </p>
       </div>
 
