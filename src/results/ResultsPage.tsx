@@ -17,8 +17,10 @@ import {
   DISTROS,
   FIT_LABEL_MEANINGS,
   getQuizFlow,
+  INSTALL_DIFFICULTY_LABELS,
   recommendDistros,
   type DistroProfile,
+  type DistroRecommendation,
   type FitLabel,
 } from "../domain";
 import {
@@ -87,12 +89,54 @@ function DistroMark({
   );
 }
 
-/**
- * Interim results view. The full transparent breakdown (what to expect,
- * official links, tradeoffs in depth) lands with the results-page ticket;
- * for now the page proves the end-to-end path — stored answers in, engine
- * ranking out — and gives the user somewhere sensible to land.
- */
+function getCaveatMessage(
+  rec: DistroRecommendation,
+  flow: "newcomer" | "experienced",
+): string | null {
+  if (rec.warning) {
+    return rec.warning;
+  }
+  const caveat = rec.distro.caveat;
+  if (
+    caveat &&
+    (caveat.mostRelevantTo === "everyone" || flow === "newcomer")
+  ) {
+    return `${caveat.headline}: ${caveat.detail}`;
+  }
+  return null;
+}
+
+function OfficialLinksRow({ distro }: { distro: DistroProfile }) {
+  return (
+    <div className="results-official-links" aria-label={`Official links for ${distro.name}`}>
+      <a
+        className="text-link"
+        href={distro.links.website}
+        target="_blank"
+        rel="noreferrer noopener"
+      >
+        Website <ArrowUpRight size={14} aria-hidden="true" />
+      </a>
+      <a
+        className="text-link"
+        href={distro.links.download}
+        target="_blank"
+        rel="noreferrer noopener"
+      >
+        Download <ArrowUpRight size={14} aria-hidden="true" />
+      </a>
+      <a
+        className="text-link"
+        href={distro.links.docs}
+        target="_blank"
+        rel="noreferrer noopener"
+      >
+        Docs <ArrowUpRight size={14} aria-hidden="true" />
+      </a>
+    </div>
+  );
+}
+
 export default function ResultsPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -144,6 +188,7 @@ export default function ResultsPage() {
   }
 
   const top = result.topPick;
+  const topWarning = getCaveatMessage(top, run.flow);
   const quizPath = `/quiz/${run.flow}`;
   const audienceLabel =
     run.flow === "newcomer" ? "NEW TO LINUX" : "ALREADY USE LINUX";
@@ -204,10 +249,34 @@ export default function ResultsPage() {
           </div>
         ) : null}
 
-        {top.warning ? (
+        <div className="results-section">
+          <h3>What to expect</h3>
+          <dl className="results-expect-grid">
+            <div className="results-expect-item">
+              <dt>
+                Install ({INSTALL_DIFFICULTY_LABELS[top.distro.whatToExpect.installDifficulty]})
+              </dt>
+              <dd>{top.distro.whatToExpect.install}</dd>
+            </div>
+            <div className="results-expect-item">
+              <dt>Day-to-day maintenance</dt>
+              <dd>{top.distro.whatToExpect.maintenance}</dd>
+            </div>
+            <div className="results-expect-item">
+              <dt>Getting software</dt>
+              <dd>{top.distro.whatToExpect.softwareInstall}</dd>
+            </div>
+            <div className="results-expect-item">
+              <dt>Who feels at home</dt>
+              <dd>{top.distro.whatToExpect.whoWillFeelAtHome}</dd>
+            </div>
+          </dl>
+        </div>
+
+        {topWarning ? (
           <div className="results-warning" role="note">
             <TriangleAlert size={17} aria-hidden="true" />
-            <p>{top.warning}</p>
+            <p>{topWarning}</p>
           </div>
         ) : null}
 
@@ -216,38 +285,78 @@ export default function ResultsPage() {
             See {top.distro.name} in depth{" "}
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <a
-            className="text-link"
-            href={top.distro.links.website}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Official website <ArrowUpRight size={14} aria-hidden="true" />
-          </a>
+          <OfficialLinksRow distro={top.distro} />
         </div>
       </article>
 
       <div className="results-alternatives">
         <h2 className="results-alternatives-title">Two close alternatives</h2>
         <div className="results-alt-grid">
-          {result.alternatives.map((alternative) => (
-            <article className="results-alt" key={alternative.distro.slug}>
-              <div className="results-alt-head">
-                <DistroMark distro={alternative.distro} size={52} />
-                <div>
-                  <h3>{alternative.distro.name}</h3>
-                  <FitBadge fit={alternative.overallFit} />
+          {result.alternatives.map((alternative) => {
+            const altWarning = getCaveatMessage(alternative, run.flow);
+            return (
+              <article className="results-alt" key={alternative.distro.slug}>
+                <div className="results-alt-head">
+                  <DistroMark distro={alternative.distro} size={52} />
+                  <div>
+                    <h3>{alternative.distro.name}</h3>
+                    <FitBadge fit={alternative.overallFit} />
+                  </div>
                 </div>
-              </div>
-              <p className="results-alt-tagline">{alternative.distro.tagline}</p>
-              <Link
-                className="text-link results-alt-link"
-                to={`/distros/${alternative.distro.slug}`}
-              >
-                View profile <ArrowRight size={14} aria-hidden="true" />
-              </Link>
-            </article>
-          ))}
+                <p className="results-alt-tagline">{alternative.distro.tagline}</p>
+
+                {alternative.matches.length > 0 ? (
+                  <div className="results-section results-section--compact">
+                    <h4>Why this fits</h4>
+                    <ul className="results-reasons">
+                      {alternative.matches.slice(0, 3).map((match) => (
+                        <li key={match.dimension}>{match.reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {alternative.tradeoffs.length > 0 ? (
+                  <div className="results-section results-section--compact">
+                    <h4>Worth knowing</h4>
+                    <ul className="results-tradeoffs">
+                      {alternative.tradeoffs.slice(0, 2).map((tradeoff) => (
+                        <li key={tradeoff}>{tradeoff}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                <div className="results-section results-section--compact">
+                  <h4>What to expect</h4>
+                  <p className="results-alt-expect">
+                    <strong>
+                      {INSTALL_DIFFICULTY_LABELS[alternative.distro.whatToExpect.installDifficulty]} install:
+                    </strong>{" "}
+                    {alternative.distro.whatToExpect.install}{" "}
+                    {alternative.distro.whatToExpect.whoWillFeelAtHome}
+                  </p>
+                </div>
+
+                {altWarning ? (
+                  <div className="results-warning results-warning--compact" role="note">
+                    <TriangleAlert size={15} aria-hidden="true" />
+                    <p>{altWarning}</p>
+                  </div>
+                ) : null}
+
+                <div className="results-alt-footer">
+                  <Link
+                    className="text-link results-alt-link"
+                    to={`/distros/${alternative.distro.slug}`}
+                  >
+                    View profile <ArrowRight size={14} aria-hidden="true" />
+                  </Link>
+                  <OfficialLinksRow distro={alternative.distro} />
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
 
@@ -262,11 +371,6 @@ export default function ResultsPage() {
           Browse the catalog <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </div>
-      <p className="results-interim-note">
-        A first look, generated from your answers. The detailed results
-        experience — what to expect from each pick and deeper tradeoffs — is
-        coming soon.
-      </p>
     </section>
   );
 }
