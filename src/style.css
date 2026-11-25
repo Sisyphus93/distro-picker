@@ -2242,6 +2242,8 @@ main:focus-visible {
 .compare-row-scale { display: block; color: #6b7d6e; font-size: 10.5px; line-height: 1.55; font-weight: 400; margin-top: 7px; }
 .compare-cell-main { color: #253e2f; font-size: 13px; font-weight: 700; margin: 0; }
 .compare-cell-note, .compare-rationale { color: #586b5d; font-size: 12px; line-height: 1.65; margin: 7px 0 0; }
+.compare-caveat { background: #fdf6e0; }
+.compare-caveat .compare-cell-main, .compare-caveat .compare-cell-note { color: #6b5518; }
 .compare-list { margin: 0; padding-left: 17px; color: #4f6254; font-size: 12px; line-height: 1.65; }
 .compare-list li + li { margin-top: 6px; }
 .compare-list li::marker { color: #4f7a56; }

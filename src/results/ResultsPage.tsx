@@ -180,7 +180,7 @@ export default function ResultsPage() {
           <div className="results-section">
             <h3>Why this fits</h3>
             <ul className="results-reasons">
-              {top.matches.slice(0, 4).map((match) => (
+              {top.matches.map((match) => (
                 <li key={match.dimension}>{match.reason}</li>
               ))}
             </ul>
@@ -191,7 +191,7 @@ export default function ResultsPage() {
           <div className="results-section">
             <h3>Worth knowing</h3>
             <ul className="results-tradeoffs">
-              {top.tradeoffs.slice(0, 3).map((tradeoff) => (
+              {top.tradeoffs.map((tradeoff) => (
                 <li key={tradeoff}>{tradeoff}</li>
               ))}
             </ul>
@@ -262,7 +262,7 @@ export default function ResultsPage() {
                   <div className="results-section results-section--compact">
                     <h4>Why this fits</h4>
                     <ul className="results-reasons">
-                      {alternative.matches.slice(0, 3).map((match) => (
+                      {alternative.matches.map((match) => (
                         <li key={match.dimension}>{match.reason}</li>
                       ))}
                     </ul>
@@ -273,7 +273,7 @@ export default function ResultsPage() {
                   <div className="results-section results-section--compact">
                     <h4>Worth knowing</h4>
                     <ul className="results-tradeoffs">
-                      {alternative.tradeoffs.slice(0, 2).map((tradeoff) => (
+                      {alternative.tradeoffs.map((tradeoff) => (
                         <li key={tradeoff}>{tradeoff}</li>
                       ))}
                     </ul>

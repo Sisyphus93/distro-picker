@@ -20,6 +20,7 @@
 - Selection rules already exist and are tested in `src/domain/comparison.ts` (`MAX_COMPARISON_DISTROS = 3`, `toggleComparisonSelection`, `normalizeComparisonSelection`). Reuse them rather than re-deriving the cap, and keep the catalog's `?compare=` params in sync when a distro is removed from the comparison view so returning to the catalog keeps the narrowed selection.
 
 - Implemented `/compare` as a semantic, horizontally scrollable comparison table using the shared profiles and all ten ratings with rationales and scale labels. It supports empty and one-distro selections, individual removal, clear, and links to official sources.
+- Review follow-up: a "Caveat" row now shows each profile's curated caveat (or says there is none), so advanced/caveat-heavy distros are labelled in comparison as well as in catalog, results and detail views.
 - Selection is normalized and capped for direct links. The catalog passes its URL state and scroll position to the comparison; return links preserve search, filters and sort while synchronizing the current selection. Direct links fall back to an unfiltered catalog.
 - Keyboard users can focus the scroll region and remove controls; after removal focus returns to the comparison heading. The narrow layout keeps row headers visible while scrolling.
 - Verified `npm run typecheck`, `npm test` (80 tests), and `npm run build`. Additional temporary DOM interaction checks covered the filtered catalog round-trip, removal and focus, direct-link normalization, and clearing the selection.

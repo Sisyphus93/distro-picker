@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { CATALOG_SORTS, queryCatalog, topStrengths } from "./catalog";
+import {
+  CATALOG_SORTS,
+  PRIORITY_MATCH_MINIMUM,
+  queryCatalog,
+  topStrengths,
+} from "./catalog";
 import { DIMENSIONS, type DimensionId } from "./dimensions";
 import { DISTROS } from "./distros";
 import type { DimensionRatings, DistroProfile, Rating } from "./types";
@@ -106,34 +111,27 @@ describe("catalog search", () => {
 });
 
 describe("catalog priorities", () => {
-  it("keeps distros rated at or above the threshold on one priority", () => {
-    const results = queryCatalog(fixtures, {
-      priorities: ["lightweight"],
-      threshold: 4,
-    });
+  it("keeps distros rated at the published 4+ bar on one priority", () => {
+    const results = queryCatalog(fixtures, { priorities: ["lightweight"] });
     expect(namesOf(results)).toEqual(["Mint Like", "Arch Like"]);
   });
 
   it("requires every picked priority to match", () => {
     const results = queryCatalog(fixtures, {
       priorities: ["lightweight", "ease-of-use"],
-      threshold: 4,
     });
     expect(namesOf(results)).toEqual(["Mint Like"]);
   });
 
-  it("can demand a standout (5) rating", () => {
-    const results = queryCatalog(fixtures, {
-      priorities: ["lightweight"],
-      threshold: 5,
-    });
-    expect(namesOf(results)).toEqual(["Arch Like"]);
+  it("excludes a distro rated below the 4+ bar on a picked priority", () => {
+    const results = queryCatalog(fixtures, { priorities: ["ease-of-use"] });
+    expect(namesOf(results)).toEqual(["Mint Like"]);
   });
 
   it("does not filter when no priority is picked", () => {
-    expect(
-      namesOf(queryCatalog(fixtures, { priorities: [], threshold: 5 })),
-    ).toEqual(namesOf(fixtures));
+    expect(namesOf(queryCatalog(fixtures, { priorities: [] }))).toEqual(
+      namesOf(fixtures),
+    );
   });
 });
 
@@ -168,7 +166,6 @@ describe("catalog sorting", () => {
     const results = queryCatalog(fixtures, {
       search: "like",
       priorities: ["gaming"],
-      threshold: 4,
       sort: "name",
     });
     expect(namesOf(results)).toEqual(["Arch Like", "Gaming Like"]);
@@ -193,14 +190,14 @@ describe("catalog against the curated dataset", () => {
   });
 
   it("narrows the real catalog with a priority", () => {
-    const results = queryCatalog(DISTROS, {
-      priorities: ["gaming"],
-      threshold: 5,
-    });
+    const results = queryCatalog(DISTROS, { priorities: ["gaming"] });
     expect(results.length).toBeGreaterThan(0);
     expect(results.length).toBeLessThan(DISTROS.length);
     expect(
-      results.every((distro) => distro.ratings.gaming.rating === 5),
+      results.every(
+        (distro) =>
+          distro.ratings.gaming.rating >= PRIORITY_MATCH_MINIMUM,
+      ),
     ).toBe(true);
   });
 

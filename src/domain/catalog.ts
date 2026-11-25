@@ -112,8 +112,6 @@ export interface CatalogQuery {
   search?: string;
   /** Qualities a distro must rate well on. Every picked one must match. */
   priorities?: readonly DimensionId[];
-  /** Minimum rating for each priority. Defaults to `PRIORITY_MATCH_MINIMUM`. */
-  threshold?: Rating;
   /** Result ordering. Defaults to the dataset's curated order. */
   sort?: CatalogSortId;
 }
@@ -133,10 +131,9 @@ function matchesSearch(distro: DistroProfile, normalizedSearch: string): boolean
 function matchesPriorities(
   distro: DistroProfile,
   priorities: readonly DimensionId[],
-  threshold: Rating,
 ): boolean {
   return priorities.every(
-    (dimension) => distro.ratings[dimension].rating >= threshold,
+    (dimension) => distro.ratings[dimension].rating >= PRIORITY_MATCH_MINIMUM,
   );
 }
 
@@ -170,12 +167,11 @@ export function queryCatalog(
 ): DistroProfile[] {
   const search = normalizeCatalogText(query.search ?? "");
   const priorities = query.priorities ?? [];
-  const threshold = query.threshold ?? PRIORITY_MATCH_MINIMUM;
 
   const matches = distros.filter(
     (distro) =>
       (search === "" || matchesSearch(distro, search)) &&
-      matchesPriorities(distro, priorities, threshold),
+      matchesPriorities(distro, priorities),
   );
   return sortCatalog(matches, query.sort ?? DEFAULT_CATALOG_SORT);
 }

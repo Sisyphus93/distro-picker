@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Run `npm run typecheck` to check types, `npm test` to run the unit tests, and `npm run build` to create the static site in `dist/`. Run `npm run preview` to serve the build locally.
+Run `npm run typecheck` to check types, `npm test` to run the unit tests, and `npm run build` to create the static site in `dist/`. Run `npm run preview` to serve the build locally. Tests cover the recommendation engine and pure domain/URL helpers; UI behaviour is checked in the built preview rather than with component-rendering tests.
 
 The quiz, results, catalog, comparison, distro detail and methodology pages are implemented. The audience paths are `/quiz/newcomer` and `/quiz/experienced`; distro detail routes use `/distros/:slug`.
 
@@ -39,4 +39,4 @@ The app uses client-side routing. A production static host must serve `index.htm
 
 Every distro is rated 1–5 on every dimension with a short rationale. A rating of 1 sits at the dimension's `lowLabel`, a rating of 5 at its `highLabel`; quiz answers target the same scale, so scoring needs no distro-specific rules.
 
-To add or update a distro, edit its file in `src/domain/distros/`, fill in every required field, and run `npm run dev` — the app validates the dataset on startup in development. `npm run typecheck` catches structural omissions.
+To add or update a distro, create or edit its file in `src/domain/distros/`, import it and add it to `DISTROS` in `src/domain/distros/index.ts`, and add its slug to `EXPECTED_DISTRO_SLUGS` in `src/domain/integrity.ts`. Fill in every required field, then run `npm run dev` — the app validates the dataset on startup in development. `npm run typecheck` catches structural omissions.

@@ -19,8 +19,9 @@ import { zorinOs } from "./zorin-os";
 /**
  * The curated v1 dataset, in presentation-neutral catalog order.
  *
- * Adding a distro: create a profile file, import it here, and run the app in
- * development mode — `assertDomainIntegrity` validates the dataset on load.
+ * Adding a distro: create a profile file, import it here, add its slug to
+ * `EXPECTED_DISTRO_SLUGS` in `integrity.ts`, and run the app in development
+ * mode — `assertDomainIntegrity` validates the dataset on load.
  */
 export const DISTROS: readonly DistroProfile[] = [
   ubuntu,
