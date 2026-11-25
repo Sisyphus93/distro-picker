@@ -26,13 +26,22 @@ import type {
  * Ties in the ranking keep the dataset's curated order (the sort is stable).
  */
 
-/** A distro agrees with a preference within one rating point. */
-const MATCH_GAP = 1;
-/** A mismatch this large (even at low weight) earns an explicit warning. */
-const EXTREME_GAP = 3;
-
-const STRONG_THRESHOLD = 1;
-const GOOD_THRESHOLD = 2;
+/**
+ * The scoring rules, exposed so the methodology page can explain the engine
+ * without keeping a second copy of the numbers.
+ *
+ * Gaps are measured on the shared 1–5 rating scale.
+ */
+export const SCORING_RULES = {
+  /** A distro within this gap of a preference counts as a match. */
+  matchGap: 1,
+  /** A gap this large earns an explicit warning, even at low weight. */
+  extremeGap: 3,
+  /** Weighted average gap at or below this value earns a Strong fit. */
+  strongThreshold: 1,
+  /** Weighted average gap at or below this value earns a Good fit. */
+  goodThreshold: 2,
+} as const;
 
 interface ScoredDistro {
   recommendation: DistroRecommendation;
@@ -60,7 +69,7 @@ function scoreDistro(
     totalWeight += pref.weight;
     weightedGapSum += pref.weight * gap;
 
-    if (gap <= MATCH_GAP) {
+    if (gap <= SCORING_RULES.matchGap) {
       matches.push({
         dimension: pref.dimension,
         fit: gap === 0 ? "Strong" : "Good",
@@ -70,7 +79,7 @@ function scoreDistro(
       tradeoffs.push(
         `${dimension.label} works against what you asked for: ${rationale}`,
       );
-      if (gap >= EXTREME_GAP) {
+      if (gap >= SCORING_RULES.extremeGap) {
         warnings.push(
           `Works strongly against your ${dimension.label} preference: ${rationale}`,
         );
@@ -82,9 +91,9 @@ function scoreDistro(
   const overallFit =
     totalWeight === 0
       ? "Good"
-      : weightedGap <= STRONG_THRESHOLD
+      : weightedGap <= SCORING_RULES.strongThreshold
         ? "Strong"
-        : weightedGap <= GOOD_THRESHOLD
+        : weightedGap <= SCORING_RULES.goodThreshold
           ? "Good"
           : "Partial";
 

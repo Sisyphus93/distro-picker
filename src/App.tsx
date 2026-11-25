@@ -10,19 +10,32 @@ import {
   Route,
   Sparkles,
 } from "lucide-react";
+import { useEffect } from "react";
 import {
   Link,
   NavLink,
   Route as PageRoute,
   Routes,
+  useLocation,
 } from "react-router-dom";
-import { EXPERIENCED_QUIZ, NEWCOMER_QUIZ } from "./domain";
+import { DISTROS, EXPERIENCED_QUIZ, NEWCOMER_QUIZ } from "./domain";
 import QuizChooser from "./quiz/QuizChooser";
 import QuizPage from "./quiz/QuizPage";
 import ResultsPage from "./results/ResultsPage";
 import CatalogPage from "./catalog/CatalogPage";
 import ComparePage from "./catalog/ComparePage";
 import DistroDetailPage from "./detail/DistroDetailPage";
+import MethodologyPage from "./methodology/MethodologyPage";
+import { titleForPath } from "./navigation/document-title";
+
+/** Keeps the browser tab in step with the current route. */
+function DocumentTitle() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    document.title = titleForPath(pathname);
+  }, [pathname]);
+  return null;
+}
 
 function Brand() {
   return (
@@ -48,7 +61,7 @@ function Header() {
             Home
           </NavLink>
           <NavLink to="/catalog">Explore distros</NavLink>
-          <NavLink to="/methodology">How it works</NavLink>
+          <NavLink to="/methodology">How we recommend</NavLink>
         </nav>
         <Link className="header-cta" to="/quiz">
           Find my distro <ArrowUpRight size={15} />
@@ -66,11 +79,12 @@ function Footer() {
           <Brand />
           <p>A little clarity for your Linux journey.</p>
         </div>
-        <div className="footer-links">
+        <nav className="footer-links" aria-label="Footer">
           <Link to="/catalog">Explore distros</Link>
-          <Link to="/methodology">How it works</Link>
+          <Link to="/methodology">How we recommend</Link>
+          <Link to="/quiz">Take the quiz</Link>
           <Link to="/results">Results</Link>
-        </div>
+        </nav>
         <p className="footer-note">Made for the curious, wherever you begin.</p>
       </div>
     </footer>
@@ -169,8 +183,8 @@ function Home() {
             </Link>
           </div>
           <div className="hero-footnote">
-            <span className="tiny-stars">✳</span> A little guidance goes a long
-            way.
+            <span className="tiny-stars" aria-hidden="true">✳</span> A little
+            guidance goes a long way.
           </div>
         </div>
         <CompassArt />
@@ -299,29 +313,28 @@ function Home() {
   );
 }
 
-function Placeholder({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
+function NotFound() {
   return (
-    <section className="placeholder wrap">
+    <section className="placeholder wrap" aria-labelledby="not-found-title">
       <div className="eyebrow muted">
-        <span className="section-index">DISTRO PICKER /</span> COMING SOON
+        <span className="section-index">DISTRO PICKER /</span> PAGE NOT FOUND
       </div>
-      <h1>
-        {title}
-        <span className="green-dot">.</span>
+      <h1 id="not-found-title">
+        Page not found<span className="green-dot">.</span>
       </h1>
-      <p>{description}</p>
+      <p>
+        We couldn’t find that page — but the {DISTROS.length} curated distros,
+        the quiz and the methodology explainer are all still here.
+      </p>
       <div className="placeholder-actions">
         <Link className="button button-dark" to="/">
-          Back to home <ArrowRight size={17} />
+          Back to home <ArrowRight size={17} aria-hidden="true" />
         </Link>
         <Link className="text-link" to="/catalog">
-          Explore distros <ArrowRight size={16} />
+          Explore distros <ArrowRight size={16} aria-hidden="true" />
+        </Link>
+        <Link className="text-link" to="/methodology">
+          How we recommend <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
     </section>
@@ -331,11 +344,12 @@ function Placeholder({
 function App() {
   return (
     <>
+      <DocumentTitle />
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
       <Header />
-      <main id="main-content">
+      <main id="main-content" tabIndex={-1}>
         <Routes>
           <PageRoute path="/" element={<Home />} />
           <PageRoute path="/quiz" element={<QuizChooser />} />
@@ -351,24 +365,8 @@ function App() {
           <PageRoute path="/catalog" element={<CatalogPage />} />
           <PageRoute path="/compare" element={<ComparePage />} />
           <PageRoute path="/distros/:slug" element={<DistroDetailPage />} />
-          <PageRoute
-            path="/methodology"
-            element={
-              <Placeholder
-                title="How we recommend"
-                description="Our approach to recommendations and the criteria behind them will be explained here soon."
-              />
-            }
-          />
-          <PageRoute
-            path="*"
-            element={
-              <Placeholder
-                title="Page not found"
-                description="We couldn't find that page. Let's get you back on track."
-              />
-            }
-          />
+          <PageRoute path="/methodology" element={<MethodologyPage />} />
+          <PageRoute path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />

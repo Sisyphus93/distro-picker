@@ -223,7 +223,9 @@ export default function QuizExperience({ flow, onComplete }: QuizExperienceProps
         <div
           className="quiz-options"
           role="radiogroup"
+          aria-required="true"
           aria-labelledby="quiz-question-title"
+          aria-describedby="quiz-answer-hint"
         >
           {options.map((option) => {
             const selected = option.id === selectedOptionId;
@@ -273,7 +275,11 @@ export default function QuizExperience({ flow, onComplete }: QuizExperienceProps
           >
             <ArrowLeft size={16} aria-hidden="true" /> Back
           </button>
-          <p className="quiz-footer-note">You can revisit and change answers.</p>
+          <p className="quiz-footer-note" id="quiz-answer-hint" role="status">
+            {selectedOptionId
+              ? "You can revisit and change answers."
+              : "Choose an answer to continue."}
+          </p>
           <button
             type="button"
             className="button button-dark quiz-button-next"

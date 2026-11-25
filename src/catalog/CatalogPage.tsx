@@ -71,6 +71,7 @@ export default function CatalogPage() {
   );
 
   const hasFilters = state.search !== "" || state.priorities.length > 0;
+  const comparisonFull = state.compare.length >= MAX_COMPARISON_DISTROS;
 
   function update(next: CatalogViewState) {
     setSearchParams(buildCatalogViewSearchParams(next), { replace: true });
@@ -120,6 +121,14 @@ export default function CatalogPage() {
         onChange={update}
         onClearFilters={clearFilters}
       />
+
+      {comparisonFull ? (
+        <p className="catalog-note catalog-note--full" role="status">
+          Comparison is full ({MAX_COMPARISON_DISTROS} of{" "}
+          {MAX_COMPARISON_DISTROS}). Remove one from the tray to swap in another
+          distro.
+        </p>
+      ) : null}
 
       {results.length === 0 ? (
         <div className="catalog-empty">
