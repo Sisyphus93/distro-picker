@@ -1,5 +1,6 @@
 import { ArrowRight, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { buildComparePath } from "./compare-search";
 import {
   getDistrosBySlugs,
   MAX_COMPARISON_DISTROS,
@@ -21,6 +22,8 @@ export default function ComparisonTray({
   onRemove: (slug: string) => void;
   onClear: () => void;
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   if (slugs.length === 0) {
     return null;
   }
@@ -64,7 +67,18 @@ export default function ComparisonTray({
           </button>
           <Link
             className="button button-dark comparison-tray-cta"
-            to={`/compare?distros=${selected.map((d) => d.slug).join(",")}`}
+            to={buildComparePath(slugs)}
+            state={{ catalogSearch: location.search }}
+            onClick={(event) => {
+              // Preserve the scroll position for ordinary in-app navigation;
+              // modified clicks retain normal link behaviour.
+              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              navigate(buildComparePath(slugs), {
+                state: { catalogSearch: location.search, catalogScrollY: window.scrollY },
+              });
+              window.scrollTo(0, 0);
+            }}
           >
             {selected.length === 1
               ? "Open comparison"
