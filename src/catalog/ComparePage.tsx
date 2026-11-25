@@ -375,6 +375,29 @@ export default function ComparePage() {
                 </tr>
                 <tr>
                   <th scope="row" className="compare-row-head">
+                    <span className="compare-row-label">Caveat</span>
+                  </th>
+                  {distros.map((distro) => (
+                    <td key={distro.slug} className="compare-caveat">
+                      {distro.caveat ? (
+                        <>
+                          <p className="compare-cell-main">
+                            {distro.caveat.headline}
+                          </p>
+                          <p className="compare-cell-note">
+                            {distro.caveat.detail}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="compare-cell-note">
+                          No specific caveat for this profile.
+                        </p>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <th scope="row" className="compare-row-head">
                     <span className="compare-row-label">What to expect</span>
                   </th>
                   {distros.map((distro) => (
