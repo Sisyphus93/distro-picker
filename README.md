@@ -11,9 +11,11 @@ npm run dev
 
 Run `npm run typecheck` to check types, `npm test` to run the unit tests, and `npm run build` to create the static site in `dist/`. Run `npm run preview` to serve the build locally.
 
-The quiz, results and catalog are implemented; the distro detail and methodology pages are still placeholders for upcoming work. The audience paths are `/quiz/newcomer` and `/quiz/experienced`; distro detail routes use `/distros/:slug`.
+The quiz, results, catalog, comparison and distro detail pages are implemented; the methodology page is still a placeholder for the final polish ticket. The audience paths are `/quiz/newcomer` and `/quiz/experienced`; distro detail routes use `/distros/:slug`.
 
 The catalog (`/catalog`) keeps its search, priority filters, sort and up-to-three comparison selection in the URL (`?q=`, repeated `?dim=`, `?sort=`, repeated `?compare=`), so a filtered view can be shared or reloaded. The comparison view (`/compare?distros=slug,slug`) presents the shared profile fields and all ten ratings side by side. Opening it from the catalog and returning preserves the catalog's search, filters, sort and scroll position, while reflecting any removals. Direct comparison links open independently and return to an unfiltered catalog with the current selection.
+
+The detail page (`/distros/:slug`) renders the full shared profile for each of the 16 curated distros: identity and context, "Best for" / "Not ideal for" / key tradeoffs, all ten dimension ratings with rationales and scale labels, "What to expect", official website/download/docs links and the "Last reviewed" date. Advanced and caveat-heavy profiles show newcomer-specific caution. Breadcrumbs and a context-aware back link return to the exact catalog view (search, filters, sort, comparison selection and scroll position), results, comparison or home; direct links fall back to the catalog. Previous/next distro links carry that context along. Navigation context is validated in `src/navigation/profile-origin.ts`.
 
 The app uses client-side routing. A production static host must serve `index.html` as a fallback for requests to routes such as `/catalog` and `/distros/ubuntu`.
 

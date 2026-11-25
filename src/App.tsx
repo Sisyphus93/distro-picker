@@ -15,7 +15,6 @@ import {
   NavLink,
   Route as PageRoute,
   Routes,
-  useParams,
 } from "react-router-dom";
 import { EXPERIENCED_QUIZ, NEWCOMER_QUIZ } from "./domain";
 import QuizChooser from "./quiz/QuizChooser";
@@ -23,6 +22,7 @@ import QuizPage from "./quiz/QuizPage";
 import ResultsPage from "./results/ResultsPage";
 import CatalogPage from "./catalog/CatalogPage";
 import ComparePage from "./catalog/ComparePage";
+import DistroDetailPage from "./detail/DistroDetailPage";
 
 function Brand() {
   return (
@@ -328,16 +328,6 @@ function Placeholder({
   );
 }
 
-function DistroPlaceholder() {
-  const { slug } = useParams();
-  return (
-    <Placeholder
-      title="Distro details"
-      description={`The profile for ${slug ?? "this distro"} is not available yet. Detailed distro profiles are coming soon.`}
-    />
-  );
-}
-
 function App() {
   return (
     <>
@@ -360,7 +350,7 @@ function App() {
           <PageRoute path="/results" element={<ResultsPage />} />
           <PageRoute path="/catalog" element={<CatalogPage />} />
           <PageRoute path="/compare" element={<ComparePage />} />
-          <PageRoute path="/distros/:slug" element={<DistroPlaceholder />} />
+          <PageRoute path="/distros/:slug" element={<DistroDetailPage />} />
           <PageRoute
             path="/methodology"
             element={

@@ -15,6 +15,11 @@ import DistroMark from "../components/DistroMark";
 import { RatingPips } from "./DistroCard";
 import { formatReviewedDate } from "./formatDate";
 import { buildCatalogComparePath, buildCompareSearchParams, parseCompareSlugs } from "./compare-search";
+import {
+  buildProfileOrigin,
+  profileOriginState,
+  type ProfileOriginState,
+} from "../navigation/profile-origin";
 
 /**
  * Side-by-side comparison of up to three distros.
@@ -78,7 +83,13 @@ function ExpectCell({ distro }: { distro: DistroProfile }) {
   );
 }
 
-function OfficialLinksCell({ distro }: { distro: DistroProfile }) {
+function OfficialLinksCell({
+  distro,
+  profileState,
+}: {
+  distro: DistroProfile;
+  profileState: ProfileOriginState;
+}) {
   const links = [
     { label: "Website", href: distro.links.website },
     { label: "Download", href: distro.links.download },
@@ -103,6 +114,7 @@ function OfficialLinksCell({ distro }: { distro: DistroProfile }) {
       <Link
         className="text-link compare-profile-link"
         to={`/distros/${distro.slug}`}
+        state={profileState}
       >
         View profile <ArrowRight size={13} aria-hidden="true" />
       </Link>
@@ -137,6 +149,12 @@ export default function ComparePage() {
 
   const catalogPath = buildCatalogComparePath(slugs, catalogSearch);
   const catalogState = catalogScrollY === undefined ? undefined : { catalogScrollY };
+  const profileState = profileOriginState(
+    buildProfileOrigin("compare", location.search, {
+      catalogSearch,
+      catalogScrollY,
+    }),
+  );
   const remaining = MAX_COMPARISON_DISTROS - distros.length;
 
   function removeDistro(slug: string) {
@@ -257,6 +275,7 @@ export default function ComparePage() {
                           <Link
                             className="compare-distro-name"
                             to={`/distros/${distro.slug}`}
+                            state={profileState}
                           >
                             {distro.name}
                           </Link>
@@ -415,7 +434,10 @@ export default function ComparePage() {
                   </th>
                   {distros.map((distro) => (
                     <td key={distro.slug}>
-                      <OfficialLinksCell distro={distro} />
+                      <OfficialLinksCell
+                        distro={distro}
+                        profileState={profileState}
+                      />
                     </td>
                   ))}
                 </tr>

@@ -8,6 +8,10 @@ import {
   type DistroProfile,
 } from "../domain";
 import DistroMark from "../components/DistroMark";
+import {
+  profileOriginState,
+  type ProfileOrigin,
+} from "../navigation/profile-origin";
 import { formatReviewedDate } from "./formatDate";
 
 /**
@@ -125,14 +129,18 @@ export default function DistroCard({
   compareSelected,
   compareDisabled,
   onToggleCompare,
+  profileOrigin,
 }: {
   distro: DistroProfile;
   compareSelected: boolean;
   compareDisabled: boolean;
   onToggleCompare: () => void;
+  /** Where the profile was opened from, so "back" restores this view. */
+  profileOrigin: ProfileOrigin;
 }) {
   const strengths = topStrengths(distro);
   const profilePath = `/distros/${distro.slug}`;
+  const profileState = profileOriginState(profileOrigin);
 
   return (
     <article
@@ -143,7 +151,9 @@ export default function DistroCard({
         <DistroMark distro={distro} size={46} />
         <div className="distro-card-heading">
           <h3 id={`distro-${distro.slug}-name`}>
-            <Link to={profilePath}>{distro.name}</Link>
+            <Link to={profilePath} state={profileState}>
+              {distro.name}
+            </Link>
           </h3>
           <p className="distro-card-tagline">{distro.tagline}</p>
         </div>
@@ -178,7 +188,7 @@ export default function DistroCard({
       ) : null}
 
       <div className="distro-card-foot">
-        <Link className="text-link" to={profilePath}>
+        <Link className="text-link" to={profilePath} state={profileState}>
           View profile
         </Link>
         <CompareToggle
