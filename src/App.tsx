@@ -17,6 +17,10 @@ import {
   Routes,
   useParams,
 } from "react-router-dom";
+import { NEWCOMER_QUIZ } from "./domain";
+import QuizChooser from "./quiz/QuizChooser";
+import QuizPage from "./quiz/QuizPage";
+import ResultsPage from "./results/ResultsPage";
 
 function Brand() {
   return (
@@ -342,23 +346,10 @@ function App() {
       <main id="main-content">
         <Routes>
           <PageRoute path="/" element={<Home />} />
-          <PageRoute
-            path="/quiz"
-            element={
-              <Placeholder
-                title="Find your distro"
-                description="The guided quiz is coming soon. You'll be able to choose a path that matches your experience."
-              />
-            }
-          />
+          <PageRoute path="/quiz" element={<QuizChooser />} />
           <PageRoute
             path="/quiz/newcomer"
-            element={
-              <Placeholder
-                title="New to Linux?"
-                description="A beginner-friendly quiz is coming soon to help you find a comfortable place to start."
-              />
-            }
+            element={<QuizPage flow={NEWCOMER_QUIZ} />}
           />
           <PageRoute
             path="/quiz/experienced"
@@ -369,15 +360,7 @@ function App() {
               />
             }
           />
-          <PageRoute
-            path="/results"
-            element={
-              <Placeholder
-                title="Your results"
-                description="Recommendations and their tradeoffs will appear here after the quiz is available."
-              />
-            }
-          />
+          <PageRoute path="/results" element={<ResultsPage />} />
           <PageRoute
             path="/catalog"
             element={
