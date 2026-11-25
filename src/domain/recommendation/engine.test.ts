@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DIMENSIONS, type DimensionId } from "../dimensions";
 import { DISTROS } from "../distros";
-import { buildPreferenceProfile, NEWCOMER_QUIZ } from "../quiz";
+import { buildPreferenceProfile, EXPERIENCED_QUIZ, NEWCOMER_QUIZ } from "../quiz";
 import {
   FIT_LABELS,
   type DimensionRatings,
@@ -536,6 +536,59 @@ describe("recommendDistros with the curated dataset", () => {
       const rec = result.ranked.find((r) => r.distro.slug === slug);
       expect(rec?.warning, `expected ${slug} to carry a warning`).toBeTruthy();
     }
+  });
+
+  it("ranks experienced answers through the same recommendation shape", () => {
+    const optionIds = [
+      "development",
+      "rolling",
+      "arch-aur",
+      "new-hardware",
+      "from-scratch",
+      "live-on-the-edge",
+      "tiling",
+    ];
+    expect(EXPERIENCED_QUIZ.questions).toHaveLength(optionIds.length);
+    const answers = EXPERIENCED_QUIZ.questions.map((question, index) => {
+      const optionId = optionIds[index];
+      expect(question.options.some((option) => option.id === optionId)).toBe(true);
+      return { questionId: question.id, optionId };
+    });
+    const profile = buildPreferenceProfile(EXPERIENCED_QUIZ, answers);
+    expect(profile.flow).toBe("experienced");
+    expect(profile.preferences.map((p) => p.dimension)).toEqual(
+      expect.arrayContaining(["stability", "software-availability", "customization"]),
+    );
+
+    const result = recommendDistros(profile, DISTROS);
+    expect(result.ranked).toHaveLength(DISTROS.length);
+    expect(result.topPick.distro.slug).toBe("arch-linux");
+    expect(result.topPick.matches.length).toBeGreaterThan(0);
+    expect(result.topPick.warning).toBeTruthy();
+    expect(result.alternatives).toHaveLength(2);
+    expect(
+      new Set([result.topPick, ...result.alternatives].map((r) => r.distro.slug)).size,
+    ).toBe(3);
+  });
+
+  it("keeps experienced 'not sure' answers neutral", () => {
+    const answers = EXPERIENCED_QUIZ.questions.map((question) => {
+      const neutral = question.options.find((option) => option.kind === "neutral");
+      expect(question.allowNotSure).toBe(true);
+      expect(neutral).toBeDefined();
+      return { questionId: question.id, optionId: neutral!.id };
+    });
+    const profile = buildPreferenceProfile(EXPERIENCED_QUIZ, answers);
+    expect(profile.preferences).toEqual([]);
+    const result = recommendDistros(profile, DISTROS);
+    expect(result.ranked.map((r) => r.distro.slug)).toEqual(
+      DISTROS.map((d) => d.slug),
+    );
+    expect(
+      result.ranked.every(
+        (r) => r.overallFit === "Good" && r.matches.length === 0 && r.tradeoffs.length === 0,
+      ),
+    ).toBe(true);
   });
 
   it("keeps 'not sure' answers neutral end-to-end through the newcomer quiz", () => {

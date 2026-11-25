@@ -11,7 +11,7 @@ export const EXPERIENCED_QUIZ: QuizFlow = {
   audience: "experienced",
   title: "Find a distro that fits how you work.",
   intro:
-    "Seven direct questions about workloads, release models and workflows. Answer honestly — the recommendation is only as good as the preferences behind it.",
+    "Seven direct questions about workloads, release models and workflows. Your answers guide the ranking by shared qualities; they don’t restrict results to a specific distro, package manager or desktop.",
   questions: [
     {
       id: "experienced-workload",

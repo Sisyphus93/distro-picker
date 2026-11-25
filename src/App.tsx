@@ -17,7 +17,7 @@ import {
   Routes,
   useParams,
 } from "react-router-dom";
-import { NEWCOMER_QUIZ } from "./domain";
+import { EXPERIENCED_QUIZ, NEWCOMER_QUIZ } from "./domain";
 import QuizChooser from "./quiz/QuizChooser";
 import QuizPage from "./quiz/QuizPage";
 import ResultsPage from "./results/ResultsPage";
@@ -353,12 +353,7 @@ function App() {
           />
           <PageRoute
             path="/quiz/experienced"
-            element={
-              <Placeholder
-                title="Already use Linux?"
-                description="A quiz for experienced users is coming soon to help you find a distro that fits your preferences."
-              />
-            }
+            element={<QuizPage flow={EXPERIENCED_QUIZ} />}
           />
           <PageRoute path="/results" element={<ResultsPage />} />
           <PageRoute

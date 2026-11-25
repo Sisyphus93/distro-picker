@@ -10,7 +10,6 @@ const paths = [
     link: "/quiz/newcomer",
     action: "Start the newcomer quiz",
     className: "newcomer",
-    badge: null as string | null,
   },
   {
     number: "02",
@@ -20,7 +19,6 @@ const paths = [
     link: "/quiz/experienced",
     action: "Start the experienced quiz",
     className: "experienced",
-    badge: "Coming soon",
   },
 ];
 
@@ -50,11 +48,7 @@ export default function QuizChooser() {
           >
             <div className="card-top">
               <span className="path-icon">{path.icon}</span>
-              {path.badge ? (
-                <span className="coming-soon-badge">{path.badge}</span>
-              ) : (
-                <span className="card-number">{path.number} / 02</span>
-              )}
+              <span className="card-number">{path.number} / 02</span>
             </div>
             <div className="card-body">
               <h3>{path.title}</h3>

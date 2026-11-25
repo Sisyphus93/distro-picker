@@ -1138,18 +1138,6 @@ button:focus-visible {
   color: #416f4d;
   font-weight: 750;
 }
-.coming-soon-badge {
-  font-size: 10px;
-  letter-spacing: 1.2px;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: #9d8352;
-  background: #f6f0df;
-  border: 1px solid #e7dcbb;
-  border-radius: 99px;
-  padding: 6px 12px;
-}
-
 /* ------------------------------------------------------------------ */
 /* Results (interim view until the results-page ticket lands)          */
 /* ------------------------------------------------------------------ */
