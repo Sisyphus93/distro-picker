@@ -21,6 +21,8 @@ import { EXPERIENCED_QUIZ, NEWCOMER_QUIZ } from "./domain";
 import QuizChooser from "./quiz/QuizChooser";
 import QuizPage from "./quiz/QuizPage";
 import ResultsPage from "./results/ResultsPage";
+import CatalogPage from "./catalog/CatalogPage";
+import CompareStubPage from "./catalog/CompareStubPage";
 
 function Brand() {
   return (
@@ -356,15 +358,8 @@ function App() {
             element={<QuizPage flow={EXPERIENCED_QUIZ} />}
           />
           <PageRoute path="/results" element={<ResultsPage />} />
-          <PageRoute
-            path="/catalog"
-            element={
-              <Placeholder
-                title="Explore distros"
-                description="The distro catalog is coming soon. You'll be able to browse and compare your options here."
-              />
-            }
-          />
+          <PageRoute path="/catalog" element={<CatalogPage />} />
+          <PageRoute path="/compare" element={<CompareStubPage />} />
           <PageRoute path="/distros/:slug" element={<DistroPlaceholder />} />
           <PageRoute
             path="/methodology"
