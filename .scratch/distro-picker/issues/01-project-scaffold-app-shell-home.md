@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Project scaffolds and runs locally as a static Vite + React + TypeScript + Tailwind app.
-- [ ] Client-side routing is in place for the v1 areas (Home, Quiz, Results, Catalog, Distro detail, Methodology), with placeholder destinations where later tickets will implement content.
-- [ ] Shared app shell includes clear navigation between primary areas and works on mobile and desktop widths.
-- [ ] Home page communicates the product value and shows two explicit audience entry paths: newcomer and experienced Linux user.
-- [ ] Home page includes a direct call to action/link to the catalog for users who want to browse without taking the quiz.
-- [ ] Base visual direction is clean, modern, trustworthy, and welcoming (not a hacker-terminal aesthetic), with visible focus states for interactive controls.
+- [x] Project scaffolds and runs locally as a static Vite + React + TypeScript + Tailwind app.
+- [x] Client-side routing is in place for the v1 areas (Home, Quiz, Results, Catalog, Distro detail, Methodology), with placeholder destinations where later tickets will implement content.
+- [x] Shared app shell includes clear navigation between primary areas and works on mobile and desktop widths.
+- [x] Home page communicates the product value and shows two explicit audience entry paths: newcomer and experienced Linux user.
+- [x] Home page includes a direct call to action/link to the catalog for users who want to browse without taking the quiz.
+- [x] Base visual direction is clean, modern, trustworthy, and welcoming (not a hacker-terminal aesthetic), with visible focus states for interactive controls.
