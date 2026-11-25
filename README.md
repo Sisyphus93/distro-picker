@@ -11,7 +11,9 @@ npm run dev
 
 Run `npm run typecheck` to check types, `npm test` to run the unit tests, and `npm run build` to create the static site in `dist/`. Run `npm run preview` to serve the build locally.
 
-The quiz, results, catalog, distro detail, and methodology pages are currently placeholders for upcoming work. The audience paths are `/quiz/newcomer` and `/quiz/experienced`; distro detail routes use `/distros/:slug`.
+The quiz, results and catalog are implemented; the distro detail and methodology pages are still placeholders for upcoming work. The audience paths are `/quiz/newcomer` and `/quiz/experienced`; distro detail routes use `/distros/:slug`.
+
+The catalog (`/catalog`) keeps its search, priority filters, sort and up-to-three comparison selection in the URL (`?q=`, repeated `?dim=`, `?sort=`, repeated `?compare=`), so a filtered view can be shared or reloaded. Comparison ids are passed to `/compare?distros=slug,slug`; that view is a stub until its own ticket lands.
 
 The app uses client-side routing. A production static host must serve `index.html` as a fallback for requests to routes such as `/catalog` and `/distros/ubuntu`.
 
@@ -24,6 +26,8 @@ The app uses client-side routing. A production static host must serve `index.htm
 - `desktops.ts`, `families.ts`, `release-models.ts` — shared vocabulary for profile fields.
 - `quiz/` — newcomer and experienced question sets, the "not sure" option, and `buildPreferenceProfile`, which turns answers into the engine's input.
 - `distros/` — one file per curated distro, plus lookup helpers in `index.ts`.
+- `catalog.ts` — pure catalog querying (name search, priority filters, sort options) and the notable-strengths helper the catalog cards use. Tested in `catalog.test.ts`.
+- `comparison.ts` — the three-distro comparison selection rules shared by the catalog and the comparison view. Tested in `comparison.test.ts`.
 - `integrity.ts` — validates the dataset and quiz flows.
 - `recommendation/` — the recommendation engine: pure TypeScript, no UI dependencies. It takes the quiz-derived preference profile plus the curated dataset and returns a ranked list with qualitative fit labels (`Strong`/`Good`/`Partial`), a top pick, two close alternatives, match reasons and tradeoffs/caveats. “Not sure” answers are neutral, there are no hard eliminations in v1, and no numeric match scores are produced. Tested through its public interface in `recommendation/engine.test.ts`.
 

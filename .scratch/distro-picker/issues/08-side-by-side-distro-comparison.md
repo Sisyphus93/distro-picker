@@ -13,3 +13,8 @@
 - [ ] Users can remove a distro from comparison or change their selection without losing their place in the catalog.
 - [ ] Comparison links to official sources and/or distro detail pages for deeper evaluation.
 - [ ] Comparison controls and table/layout are keyboard accessible and semantically structured.
+
+## Comments
+
+- Ticket 07 left a seam to build on: the catalog keeps its comparison selection in the URL (`/catalog?compare=slug&compare=slug`) and links to `/compare?distros=slug,slug,slug`. `/compare` currently renders `CompareStubPage` (`src/catalog/CompareStubPage.tsx`), which resolves those slugs with `getDistrosBySlugs` (dropping stale ones) and shows the selection plus a back link. Replace that page with the real comparison table; the catalog and tray need no changes.
+- Selection rules already exist and are tested in `src/domain/comparison.ts` (`MAX_COMPARISON_DISTROS = 3`, `toggleComparisonSelection`, `normalizeComparisonSelection`). Reuse them rather than re-deriving the cap, and keep the catalog's `?compare=` params in sync when a distro is removed from the comparison view so returning to the catalog keeps the narrowed selection.

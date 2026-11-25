@@ -12,5 +12,7 @@ export * from "./preferences";
 export * from "./types";
 export * from "./quiz";
 export * from "./recommendation";
+export * from "./catalog";
+export * from "./comparison";
 export * from "./distros";
 export * from "./integrity";
