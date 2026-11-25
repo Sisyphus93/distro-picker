@@ -25,6 +25,10 @@ import {
 } from "../domain";
 import DistroMark from "../components/DistroMark";
 import {
+  buildProfileOrigin,
+  profileOriginState,
+} from "../navigation/profile-origin";
+import {
   clearQuizRun,
   loadLastQuizRun,
   parseStoredQuizRun,
@@ -95,6 +99,9 @@ function OfficialLinksRow({ distro }: { distro: DistroProfile }) {
 export default function ResultsPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const profileState = profileOriginState(
+    buildProfileOrigin("results", location.search),
+  );
 
   const run = useMemo(() => {
     const fromNav = parseStoredQuizRun(
@@ -236,7 +243,11 @@ export default function ResultsPage() {
         ) : null}
 
         <div className="results-pick-actions">
-          <Link className="button button-dark" to={`/distros/${top.distro.slug}`}>
+          <Link
+            className="button button-dark"
+            to={`/distros/${top.distro.slug}`}
+            state={profileState}
+          >
             See {top.distro.name} in depth{" "}
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
@@ -304,6 +315,7 @@ export default function ResultsPage() {
                   <Link
                     className="text-link results-alt-link"
                     to={`/distros/${alternative.distro.slug}`}
+                    state={profileState}
                   >
                     View profile <ArrowRight size={14} aria-hidden="true" />
                   </Link>

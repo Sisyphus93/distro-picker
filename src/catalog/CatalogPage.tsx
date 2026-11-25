@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { SearchX } from "lucide-react";
 import {
@@ -8,6 +8,10 @@ import {
   queryCatalog,
   toggleComparisonSelection,
 } from "../domain";
+import {
+  buildProfileOrigin,
+  rememberCatalogScrollY,
+} from "../navigation/profile-origin";
 import CatalogToolbar from "./CatalogToolbar";
 import ComparisonTray from "./ComparisonTray";
 import DistroCard from "./DistroCard";
@@ -36,6 +40,21 @@ export default function CatalogPage() {
     // Restore only when the catalog mounts, not on each filter change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Track the latest scroll position so a profile's "back" link can restore
+  // it. Tracking scroll events (rather than capturing at render) keeps it
+  // accurate, since scrolling alone does not re-render this page.
+  useEffect(() => {
+    const remember = () => rememberCatalogScrollY(window.scrollY);
+    remember();
+    window.addEventListener("scroll", remember, { passive: true });
+    return () => window.removeEventListener("scroll", remember);
+  }, []);
+
+  const profileOrigin = useMemo(
+    () => buildProfileOrigin("catalog", location.search),
+    [location.search],
+  );
   const state = useMemo(
     () => parseCatalogViewState(searchParams),
     [searchParams],
@@ -132,6 +151,7 @@ export default function CatalogPage() {
                   !state.compare.includes(distro.slug)
                 }
                 onToggleCompare={() => toggleCompare(distro.slug)}
+                profileOrigin={profileOrigin}
               />
             </li>
           ))}
