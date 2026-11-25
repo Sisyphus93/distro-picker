@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Run `npm run typecheck` to check types and `npm run build` to create the static site in `dist/`. Run `npm run preview` to serve the build locally.
+Run `npm run typecheck` to check types, `npm test` to run the unit tests, and `npm run build` to create the static site in `dist/`. Run `npm run preview` to serve the build locally.
 
 The quiz, results, catalog, distro detail, and methodology pages are currently placeholders for upcoming work. The audience paths are `/quiz/newcomer` and `/quiz/experienced`; distro detail routes use `/distros/:slug`.
 
@@ -25,6 +25,7 @@ The app uses client-side routing. A production static host must serve `index.htm
 - `quiz/` — newcomer and experienced question sets, the "not sure" option, and `buildPreferenceProfile`, which turns answers into the engine's input.
 - `distros/` — one file per curated distro, plus lookup helpers in `index.ts`.
 - `integrity.ts` — validates the dataset and quiz flows.
+- `recommendation/` — the recommendation engine: pure TypeScript, no UI dependencies. It takes the quiz-derived preference profile plus the curated dataset and returns a ranked list with qualitative fit labels (`Strong`/`Good`/`Partial`), a top pick, two close alternatives, match reasons and tradeoffs/caveats. “Not sure” answers are neutral, there are no hard eliminations in v1, and no numeric match scores are produced. Tested through its public interface in `recommendation/engine.test.ts`.
 
 Every distro is rated 1–5 on every dimension with a short rationale. A rating of 1 sits at the dimension's `lowLabel`, a rating of 5 at its `highLabel`; quiz answers target the same scale, so scoring needs no distro-specific rules.
 

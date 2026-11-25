@@ -11,5 +11,6 @@ export * from "./release-models";
 export * from "./preferences";
 export * from "./types";
 export * from "./quiz";
+export * from "./recommendation";
 export * from "./distros";
 export * from "./integrity";
