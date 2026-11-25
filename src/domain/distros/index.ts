@@ -54,14 +54,6 @@ export function getDistroBySlug(slug: string): DistroProfile | undefined {
   return DISTRO_BY_SLUG.get(slug);
 }
 
-export function requireDistroBySlug(slug: string): DistroProfile {
-  const distro = getDistroBySlug(slug);
-  if (!distro) {
-    throw new Error(`Unknown distro slug: ${slug}`);
-  }
-  return distro;
-}
-
 /**
  * Resolves slugs in the given order, skipping unknown ones. Used by the
  * comparison view, where a stale selection should not break the page.

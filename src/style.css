@@ -2096,11 +2096,6 @@ main:focus-visible {
     display: block;
   }
 }
-@media (max-width: 1000px) {
-  .compare-scroll-hint {
-    display: block;
-  }
-}
 @media (max-width: 900px) {
   .catalog-toolbar-row {
     grid-template-columns: minmax(0, 1fr) 220px;
