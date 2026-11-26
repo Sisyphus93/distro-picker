@@ -1,6 +1,10 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigationType } from "react-router-dom";
-import { buildCatalogComparePath } from "../catalog/catalog-state";
+import {
+  buildCatalogComparePath,
+  buildCatalogViewSearchParams,
+  parseCatalogViewState,
+} from "../catalog/catalog-state";
 
 /**
  * Navigation return context and scroll restoration across views.
@@ -150,23 +154,52 @@ function isSource(value: unknown): value is ProfileOriginSource {
   );
 }
 
+/**
+ * Parses an optional `?`-prefixed query string, returning `null` when it is
+ * empty or longer than the path bound.
+ */
+function parseBoundedSearch(rawSearch: string): URLSearchParams | null {
+  if (rawSearch.length === 0 || rawSearch.length > MAX_PATH_LENGTH) {
+    return null;
+  }
+  return new URLSearchParams(
+    rawSearch.startsWith("?") ? rawSearch.slice(1) : rawSearch,
+  );
+}
+
 /** Normalizes an optional query string into `""` or `"?key=value"`. */
 function normalizeSearch(rawSearch: unknown): string {
-  if (typeof rawSearch !== "string" || rawSearch.length === 0) {
+  if (typeof rawSearch !== "string") {
     return "";
   }
-  if (rawSearch.length > MAX_PATH_LENGTH) {
+  const params = parseBoundedSearch(rawSearch);
+  if (!params) {
     return "";
   }
-  const withoutQuestionMark = rawSearch.startsWith("?")
-    ? rawSearch.slice(1)
-    : rawSearch;
-  try {
-    const query = new URLSearchParams(withoutQuestionMark).toString();
-    return query ? `?${query}` : "";
-  } catch {
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+/**
+ * Canonicalizes catalog context carried in compare router state through the
+ * same codec `/catalog` uses, so only meaningful filters travel: stale
+ * `compare=` selections (always rebuilt from the live slugs), unknown keys
+ * and off-site or garbage strings never survive a Compare -> Detail ->
+ * Compare round-trip.
+ */
+function canonicalCatalogSearch(rawSearch: unknown): string {
+  if (typeof rawSearch !== "string") {
     return "";
   }
+  const params = parseBoundedSearch(rawSearch);
+  if (!params) {
+    return "";
+  }
+  const canonical = buildCatalogViewSearchParams({
+    ...parseCatalogViewState(params),
+    compare: [],
+  }).toString();
+  return canonical ? `?${canonical}` : "";
 }
 
 function parseProfileOrigin(state: unknown): ProfileOrigin | null {
@@ -201,7 +234,9 @@ function parseProfileOrigin(state: unknown): ProfileOrigin | null {
     return null;
   }
   const compareCatalogSearch =
-    raw.source === "compare" ? normalizeSearch(raw.compareCatalogSearch) : "";
+    raw.source === "compare"
+      ? canonicalCatalogSearch(raw.compareCatalogSearch)
+      : "";
   return {
     source: raw.source,
     path: `${url.pathname}${url.search}`,
@@ -213,7 +248,9 @@ function readCompareCatalogSearch(state: unknown): string {
   if (!state || typeof state !== "object") {
     return "";
   }
-  return normalizeSearch((state as { catalogSearch?: unknown }).catalogSearch);
+  return canonicalCatalogSearch(
+    (state as { catalogSearch?: unknown }).catalogSearch,
+  );
 }
 
 function hasRestoreCatalogScrollFlag(state: unknown): boolean {
@@ -230,13 +267,13 @@ export function createProfileLinkState(
   search = "",
   compareCatalogSearch?: string,
 ): { profileOrigin: ProfileOrigin } {
-  const normalizedCompareSearch =
-    source === "compare" ? normalizeSearch(compareCatalogSearch) : "";
+  const canonicalCompareSearch =
+    source === "compare" ? canonicalCatalogSearch(compareCatalogSearch) : "";
   const origin: ProfileOrigin = {
     source,
     path: `${ALLOWED_PATHS[source]}${normalizeSearch(search)}`,
-    ...(normalizedCompareSearch
-      ? { compareCatalogSearch: normalizedCompareSearch }
+    ...(canonicalCompareSearch
+      ? { compareCatalogSearch: canonicalCompareSearch }
       : {}),
   };
   return { profileOrigin: origin };
@@ -244,8 +281,8 @@ export function createProfileLinkState(
 
 /** Builds router state attached to ComparisonTray links opening `/compare`. */
 export function createCompareLinkState(catalogSearch = ""): unknown {
-  const normalized = normalizeSearch(catalogSearch);
-  return normalized ? { catalogSearch: normalized } : undefined;
+  const canonical = canonicalCatalogSearch(catalogSearch);
+  return canonical ? { catalogSearch: canonical } : undefined;
 }
 
 /** Resolves return links, labels, and preserved catalog state for ComparePage. */

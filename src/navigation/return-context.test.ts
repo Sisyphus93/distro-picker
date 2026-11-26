@@ -124,6 +124,316 @@ describe("return context navigation", () => {
     expect(compareNav.preserveState).toBeUndefined();
     expect(compareNav.catalogBackPath).toBe("/catalog?compare=ubuntu");
   });
+
+  it("resolves every supported origin source to its own back label and path", () => {
+    expect(resolveDetailNavigation(createProfileLinkState("home"))).toEqual({
+      backLabel: "Back to home",
+      backPath: "/",
+      backState: undefined,
+      catalogPath: "/catalog",
+      catalogState: undefined,
+      siblingLinkState: createProfileLinkState("home"),
+    });
+
+    const catalogState = createProfileLinkState(
+      "catalog",
+      "?q=ubuntu&dim=gaming&sort=name&compare=ubuntu",
+    );
+    expect(resolveDetailNavigation(catalogState)).toEqual({
+      backLabel: "Back to catalog",
+      backPath: "/catalog?q=ubuntu&dim=gaming&sort=name&compare=ubuntu",
+      backState: { restoreCatalogScroll: true },
+      catalogPath: "/catalog?q=ubuntu&dim=gaming&sort=name&compare=ubuntu",
+      catalogState: { restoreCatalogScroll: true },
+      siblingLinkState: catalogState,
+    });
+
+    expect(
+      resolveDetailNavigation(createProfileLinkState("results", "?flow=newcomer")),
+    ).toEqual({
+      backLabel: "Back to your results",
+      backPath: "/results?flow=newcomer",
+      backState: undefined,
+      catalogPath: "/catalog",
+      catalogState: undefined,
+      siblingLinkState: createProfileLinkState("results", "?flow=newcomer"),
+    });
+
+    const compareState = createProfileLinkState(
+      "compare",
+      "?distros=ubuntu,debian",
+      "?q=ubuntu&dim=gaming",
+    );
+    expect(resolveDetailNavigation(compareState)).toEqual({
+      backLabel: "Back to comparison",
+      backPath: "/compare?distros=ubuntu%2Cdebian",
+      backState: { catalogSearch: "?q=ubuntu&dim=gaming" },
+      catalogPath: "/catalog",
+      catalogState: undefined,
+      siblingLinkState: compareState,
+    });
+
+    const methodologyState = createProfileLinkState("methodology");
+    expect(resolveDetailNavigation(methodologyState)).toEqual({
+      backLabel: "Back to methodology",
+      backPath: "/methodology",
+      backState: undefined,
+      catalogPath: "/catalog",
+      catalogState: undefined,
+      siblingLinkState: methodologyState,
+    });
+  });
+
+  it("keeps the originating \"Back to ...\" context across Previous/Next distro hops", () => {
+    const origins = [
+      createProfileLinkState("home"),
+      createProfileLinkState("catalog", "?q=ubuntu&sort=name&compare=ubuntu"),
+      createProfileLinkState("results", "?flow=experienced"),
+      createProfileLinkState("compare", "?distros=ubuntu,debian", "?q=ubuntu"),
+      createProfileLinkState("methodology"),
+    ];
+
+    for (const origin of origins) {
+      const firstVisit = resolveDetailNavigation(origin);
+      const siblingVisit = resolveDetailNavigation(firstVisit.siblingLinkState);
+      expect(siblingVisit).toEqual(firstVisit);
+    }
+  });
+
+  it("rejects tampered, off-site, and mismatched-path router state with the catalog fallback", () => {
+    const catalogFallback = {
+      backLabel: "Back to catalog",
+      backPath: "/catalog",
+      backState: { restoreCatalogScroll: true },
+      catalogPath: "/catalog",
+      catalogState: { restoreCatalogScroll: true },
+      siblingLinkState: {
+        profileOrigin: { source: "catalog", path: "/catalog" },
+      },
+    };
+    const hostileStates: unknown[] = [
+      null,
+      undefined,
+      "catalog",
+      [],
+      { profileOrigin: "catalog" },
+      { profileOrigin: { source: "catalog" } },
+      { profileOrigin: { source: "catalog", path: 42 } },
+      { profileOrigin: { source: "unknown", path: "/catalog" } },
+      { profileOrigin: { source: "catalog", path: "https://evil.example" } },
+      { profileOrigin: { source: "catalog", path: "//evil.example/catalog" } },
+      { profileOrigin: { source: "catalog", path: "/catalog\\..\\..\\evil" } },
+      { profileOrigin: { source: "results", path: "/results\\..\\results" } },
+      { profileOrigin: { source: "results", path: "/results\n" } },
+      { profileOrigin: { source: "catalog", path: "JAVASCRIPT:alert(1)" } },
+      { profileOrigin: { source: "results", path: "/catalog" } },
+      { profileOrigin: { source: "methodology", path: "/results?q=x" } },
+      { profileOrigin: { source: "catalog", path: "/catalog/../results" } },
+      { profileOrigin: { source: "catalog", path: "/catalog%2F..%2Fresults" } },
+      {
+        profileOrigin: {
+          source: "catalog",
+          path: `/catalog?q=${"a".repeat(400)}`,
+        },
+      },
+    ];
+
+    for (const state of hostileStates) {
+      expect(resolveDetailNavigation(state)).toEqual(catalogFallback);
+    }
+  });
+
+  it("only carries canonical catalog filters into compare context", () => {
+    expect(
+      createCompareLinkState(
+        "?q=%20ubuntu%20&dim=gaming&sort=curated&compare=ubuntu,debian&ref=newsletter",
+      ),
+    ).toEqual({ catalogSearch: "?q=ubuntu&dim=gaming" });
+
+    expect(
+      createCompareLinkState("?q=ubuntu&dim=gaming&sort=name&compare=ubuntu,debian"),
+    ).toEqual({ catalogSearch: "?q=ubuntu&dim=gaming&sort=name" });
+
+    expect(createCompareLinkState("")).toBeUndefined();
+    expect(createCompareLinkState("?sort=bogus&compare=ubuntu")).toBeUndefined();
+  });
+
+  it("canonicalizes catalog context written into and read out of a compare origin", () => {
+    expect(
+      createProfileLinkState(
+        "compare",
+        "?distros=ubuntu",
+        "?q=ubuntu&sort=bogus&compare=debian",
+      ),
+    ).toEqual({
+      profileOrigin: {
+        source: "compare",
+        path: "/compare?distros=ubuntu",
+        compareCatalogSearch: "?q=ubuntu",
+      },
+    });
+
+    expect(
+      createProfileLinkState("compare", "?distros=ubuntu", "https://evil.example"),
+    ).toEqual({
+      profileOrigin: { source: "compare", path: "/compare?distros=ubuntu" },
+    });
+
+    expect(
+      resolveDetailNavigation(
+        createProfileLinkState(
+          "compare",
+          "?distros=ubuntu",
+          "?q=ubuntu&compare=debian",
+        ),
+      ).backState,
+    ).toEqual({ catalogSearch: "?q=ubuntu" });
+
+    // A tampered history entry carrying an off-site catalog search is dropped on read.
+    expect(
+      resolveDetailNavigation({
+        profileOrigin: {
+          source: "compare",
+          path: "/compare?distros=ubuntu",
+          compareCatalogSearch: "https://evil.example/?q=x",
+        },
+      }),
+    ).toEqual({
+      backLabel: "Back to comparison",
+      backPath: "/compare?distros=ubuntu",
+      backState: undefined,
+      catalogPath: "/catalog",
+      catalogState: undefined,
+      siblingLinkState: {
+        profileOrigin: { source: "compare", path: "/compare?distros=ubuntu" },
+      },
+    });
+
+    // Stale and unknown filters are canonicalized on read, so siblings inherit clean state.
+    expect(
+      resolveDetailNavigation({
+        profileOrigin: {
+          source: "compare",
+          path: "/compare?distros=ubuntu",
+          compareCatalogSearch: "?q=ubuntu&sort=bogus&compare=debian",
+        },
+      }),
+    ).toEqual({
+      backLabel: "Back to comparison",
+      backPath: "/compare?distros=ubuntu",
+      backState: { catalogSearch: "?q=ubuntu" },
+      catalogPath: "/catalog",
+      catalogState: undefined,
+      siblingLinkState: {
+        profileOrigin: {
+          source: "compare",
+          path: "/compare?distros=ubuntu",
+          compareCatalogSearch: "?q=ubuntu",
+        },
+      },
+    });
+  });
+
+  it("ignores off-site, malformed, and stale compare context instead of preserving it", () => {
+    const malformedStates: Array<{
+      state: unknown;
+      expected: { catalogSearch: string } | undefined;
+    }> = [
+      { state: null, expected: undefined },
+      { state: "string", expected: undefined },
+      { state: [], expected: undefined },
+      { state: { catalogSearch: 42 }, expected: undefined },
+      { state: { catalogSearch: `?q=${"a".repeat(400)}` }, expected: undefined },
+      { state: { catalogSearch: "https://evil.example/?q=x" }, expected: undefined },
+      { state: { catalogSearch: "//evil.example/catalog?q=x" }, expected: undefined },
+      {
+        state: { catalogSearch: "?sort=bogus&dim=nope&compare=debian" },
+        expected: undefined,
+      },
+      {
+        state: { catalogSearch: "?q=ubuntu&sort=bogus&dim=bogus&compare=debian" },
+        expected: { catalogSearch: "?q=ubuntu" },
+      },
+    ];
+
+    for (const { state, expected } of malformedStates) {
+      const compareNav = resolveCompareNavigation(
+        state,
+        ["ubuntu"],
+        "?distros=ubuntu",
+      );
+      expect(compareNav.preserveState).toEqual(expected);
+      expect(compareNav.catalogBackPath).toBe(
+        expected
+          ? `/catalog${expected.catalogSearch}&compare=ubuntu`
+          : "/catalog?compare=ubuntu",
+      );
+      expect(compareNav.catalogBackState).toEqual({ restoreCatalogScroll: true });
+      expect(compareNav.detailLinkState).toEqual({
+        profileOrigin: expected
+          ? {
+              source: "compare",
+              path: "/compare?distros=ubuntu",
+              compareCatalogSearch: expected.catalogSearch,
+            }
+          : { source: "compare", path: "/compare?distros=ubuntu" },
+      });
+    }
+  });
+
+  it("keeps the filtered catalog through Compare -> Detail -> Compare while narrowing and clearing", () => {
+    const catalogSearch =
+      "?q=ubuntu&dim=gaming&sort=name&compare=ubuntu&compare=debian";
+    const compareEntryState = createCompareLinkState(catalogSearch);
+    expect(compareEntryState).toEqual({
+      catalogSearch: "?q=ubuntu&dim=gaming&sort=name",
+    });
+
+    const fullSelection = resolveCompareNavigation(
+      compareEntryState,
+      ["ubuntu", "debian"],
+      "?distros=ubuntu,debian",
+    );
+    expect(fullSelection.catalogBackPath).toBe(
+      "/catalog?q=ubuntu&dim=gaming&sort=name&compare=ubuntu&compare=debian",
+    );
+
+    // Removing debian rewrites /compare?distros=ubuntu and keeps the catalog filters.
+    const narrowed = resolveCompareNavigation(
+      fullSelection.preserveState,
+      ["ubuntu"],
+      "?distros=ubuntu",
+    );
+    expect(narrowed.catalogBackPath).toBe(
+      "/catalog?q=ubuntu&dim=gaming&sort=name&compare=ubuntu",
+    );
+
+    // Detail opened from the narrowed comparison returns to it with the filters intact.
+    const detailFromCompare = resolveDetailNavigation(narrowed.detailLinkState);
+    expect(detailFromCompare.backPath).toBe("/compare?distros=ubuntu");
+    expect(detailFromCompare.backState).toEqual({
+      catalogSearch: "?q=ubuntu&dim=gaming&sort=name",
+    });
+
+    const backOnCompare = resolveCompareNavigation(
+      detailFromCompare.backState,
+      ["ubuntu"],
+      "?distros=ubuntu",
+    );
+    expect(backOnCompare).toEqual(narrowed);
+
+    // Clearing the selection drops ?compare= but keeps the filtered catalog and restore flag.
+    const cleared = resolveCompareNavigation(
+      backOnCompare.preserveState,
+      [],
+      "",
+    );
+    expect(cleared.catalogBackPath).toBe("/catalog?q=ubuntu&dim=gaming&sort=name");
+    expect(cleared.catalogBackState).toEqual({ restoreCatalogScroll: true });
+    expect(cleared.preserveState).toEqual({
+      catalogSearch: "?q=ubuntu&dim=gaming&sort=name",
+    });
+  });
 });
 
 describe("scroll manager", () => {
