@@ -14,7 +14,8 @@ import type {
  * absent — they contribute nothing) and a curated distro dataset. Output is a
  * ranked list with qualitative fit labels only; numeric match scores never
  * leave this module. There are no hard eliminations in v1: extreme mismatches
- * surface as tradeoffs and warnings instead.
+ * surface as tradeoffs and warnings instead. Editorial caveats are included
+ * only for their intended audience; mismatch warnings apply to every flow.
  *
  * Fit labels derive from the weight-averaged distance between the user's
  * stated ideal and the distro's rating on each dimension:

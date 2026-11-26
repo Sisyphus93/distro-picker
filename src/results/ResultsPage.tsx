@@ -93,7 +93,6 @@ export default function ResultsPage() {
   const { flow, result } = completed;
   const top = result.topPick;
   const topPresented = presentDistro(top.distro);
-  const topWarning = top.warning ?? null;
   const quizPath = `/quiz/${flow}`;
   const audienceLabel =
     flow === "newcomer" ? "NEW TO LINUX" : "ALREADY USE LINUX";
@@ -169,10 +168,10 @@ export default function ResultsPage() {
           </dl>
         </div>
 
-        {topWarning ? (
+        {top.warning ? (
           <div className="results-warning" role="note">
             <TriangleAlert size={17} aria-hidden="true" />
-            <p>{topWarning}</p>
+            <p>{top.warning}</p>
           </div>
         ) : null}
 
@@ -197,7 +196,6 @@ export default function ResultsPage() {
         <div className="results-alt-grid">
           {result.alternatives.map((alternative) => {
             const altPresented = presentDistro(alternative.distro);
-            const altWarning = alternative.warning ?? null;
             return (
               <article className="results-alt" key={alternative.distro.slug}>
                 <div className="results-alt-head">
@@ -242,10 +240,10 @@ export default function ResultsPage() {
                   </p>
                 </div>
 
-                {altWarning ? (
+                {alternative.warning ? (
                   <div className="results-warning results-warning--compact" role="note">
                     <TriangleAlert size={15} aria-hidden="true" />
-                    <p>{altWarning}</p>
+                    <p>{alternative.warning}</p>
                   </div>
                 ) : null}
 

@@ -293,69 +293,84 @@ describe("recommendDistros", () => {
     expect(advanced?.warning).toContain("Not a first distro");
   });
 
-  it("combines an extreme-mismatch warning with the distro's own caveat", () => {
-    const cave = {
-      headline: "High maintenance",
-      detail: "You keep this rolling yourself.",
-      mostRelevantTo: "newcomers" as const,
-    };
-    const distros = [
-      makeDistro("bleeding-edge", { stability: 1 }, cave),
-      makeDistro("solid", { stability: 5 }),
-      makeDistro("mid", { stability: 3 }),
-    ];
+  const extremeWarnings =
+    "Works strongly against your Stability vs freshness preference: bleeding-edge rationale for Stability vs freshness (rated 1). " +
+    "Works strongly against your Gaming readiness preference: bleeding-edge rationale for Gaming readiness (rated 1).";
+  const editorialWarning = "High maintenance: You keep this rolling yourself.";
 
-    const result = recommendDistros(
-      profileWith([preference("stability", 5, 3)]),
-      distros,
-    );
+  it.each([
+    ["newcomer", "newcomers", `${extremeWarnings} ${editorialWarning}`],
+    ["newcomer", "everyone", `${extremeWarnings} ${editorialWarning}`],
+    ["experienced", "newcomers", extremeWarnings],
+    ["experienced", "everyone", `${extremeWarnings} ${editorialWarning}`],
+  ] as const)(
+    "combines extreme mismatches with applicable caveats for %s / %s",
+    (flow, audience, expectedWarning) => {
+      const distros = [
+        makeDistro("bleeding-edge", { stability: 1, gaming: 1 }, {
+          headline: "High maintenance",
+          detail: "You keep this rolling yourself.",
+          mostRelevantTo: audience,
+        }),
+        makeDistro("solid", { stability: 5, gaming: 5 }),
+        makeDistro("mid", { stability: 3, gaming: 3 }),
+      ];
 
-    const extreme = result.ranked.find(
-      (r) => r.distro.slug === "bleeding-edge",
-    );
-    expect(extreme?.warning).toMatch(/stability/i);
-    expect(extreme?.warning).toContain("High maintenance");
-  });
+      const result = recommendDistros(
+        profileWith([
+          preference("stability", 5, 3),
+          preference("gaming", 5, 3),
+        ], flow),
+        distros,
+      );
 
-  it("suppresses newcomer-only caveats for experienced flows while keeping universal caveats", () => {
-    const newcomerCaveat = {
-      headline: "Newcomer heads-up",
-      detail: "Manual setup expected.",
-      mostRelevantTo: "newcomers" as const,
-    };
-    const universalCaveat = {
-      headline: "Heads-up for everyone",
-      detail: "Requires manual release intervention.",
-      mostRelevantTo: "everyone" as const,
-    };
-    const distros = [
-      makeDistro("newcomer-caveated", { customization: 5 }, newcomerCaveat),
-      makeDistro("universal-caveated", { customization: 4 }, universalCaveat),
-      makeDistro("plain", { customization: 3 }),
-    ];
+      const extreme = result.ranked.find((r) => r.distro.slug === "bleeding-edge");
+      expect(extreme).toBeDefined();
+      expect(extreme?.warning).toBe(expectedWarning);
+    },
+  );
 
-    const experienced = recommendDistros(
-      profileWith([preference("customization", 5, 3)], "experienced"),
-      distros,
-    );
-    expect(
-      experienced.ranked.find((r) => r.distro.slug === "newcomer-caveated")
-        ?.warning,
-    ).toBeUndefined();
-    expect(
-      experienced.ranked.find((r) => r.distro.slug === "universal-caveated")
-        ?.warning,
-    ).toContain("Heads-up for everyone");
+  it.each([
+    ["newcomer", "Newcomer heads-up: Manual setup expected."],
+    ["experienced", undefined],
+  ] as const)(
+    "scopes newcomer and universal caveats for %s profiles",
+    (flow, expectedNewcomerWarning) => {
+      const distros = [
+        makeDistro("newcomer-caveated", { customization: 5 }, {
+          headline: "Newcomer heads-up",
+          detail: "Manual setup expected.",
+          mostRelevantTo: "newcomers",
+        }),
+        makeDistro("universal-caveated", { customization: 4 }, {
+          headline: "Heads-up for everyone",
+          detail: "Requires manual release intervention.",
+          mostRelevantTo: "everyone",
+        }),
+        makeDistro("plain", { customization: 3 }),
+      ];
 
-    const newcomer = recommendDistros(
-      profileWith([preference("customization", 5, 3)], "newcomer"),
-      distros,
-    );
-    expect(
-      newcomer.ranked.find((r) => r.distro.slug === "newcomer-caveated")
-        ?.warning,
-    ).toContain("Newcomer heads-up");
-  });
+      const result = recommendDistros(
+        profileWith([preference("customization", 5, 3)], flow),
+        distros,
+      );
+
+      const newcomerCaveated = result.ranked.find(
+        (r) => r.distro.slug === "newcomer-caveated",
+      );
+      const universalCaveated = result.ranked.find(
+        (r) => r.distro.slug === "universal-caveated",
+      );
+      const plain = result.ranked.find((r) => r.distro.slug === "plain");
+      expect(newcomerCaveated).toBeDefined();
+      expect(newcomerCaveated?.warning).toBe(expectedNewcomerWarning);
+      expect(universalCaveated?.warning).toBe(
+        "Heads-up for everyone: Requires manual release intervention.",
+      );
+      expect(plain).toBeDefined();
+      expect(plain?.warning).toBeUndefined();
+    },
+  );
 
   it("gives a neutral, stable ranking when the user is not sure about anything", () => {
     // "Not sure / no preference" answers contribute no preferences at all, so
