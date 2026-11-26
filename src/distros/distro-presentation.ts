@@ -45,11 +45,16 @@ export interface PresentedDistro {
 
 /**
  * Formats an ISO date (YYYY-MM-DD) for people, falling back to the raw value
- * when it is not a valid date.
+ * when it is not a valid date. JavaScript normalises impossible calendar dates
+ * (e.g. 2026-02-30) instead of rejecting them, so check the parsed date
+ * round-trips to the same day before presenting it as fact.
  */
 export function formatReviewedDate(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== isoDate
+  ) {
     return isoDate;
   }
   return date.toLocaleDateString("en-GB", {
