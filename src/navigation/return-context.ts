@@ -360,11 +360,17 @@ export function createScrollManager(
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
         return Object.fromEntries(fallback);
       }
-      const clean: Record<string, number> = Object.fromEntries(fallback);
+      const clean: Record<string, number> = {};
       for (const [key, value] of Object.entries(parsed)) {
         if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
           clean[key] = Math.round(value);
         }
+      }
+      // This session's writes win over persisted values: a restricted tab may
+      // block setItem while still returning stale data from getItem, so the
+      // in-memory fallback is the only authoritative record of the latest offset.
+      for (const [key, value] of fallback) {
+        clean[key] = value;
       }
       return clean;
     } catch {

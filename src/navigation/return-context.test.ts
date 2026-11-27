@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createCompareLinkState,
   createMemoryScrollStorage,
@@ -437,6 +437,10 @@ describe("return context navigation", () => {
 });
 
 describe("scroll manager", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   function createFakeViewport(initialY = 0) {
     let currentY = initialY;
     const scrollCalls: Array<[number, number]> = [];
@@ -569,5 +573,402 @@ describe("scroll manager", () => {
 
     expect(() => manager.rememberCatalogScroll("?q=nix", 250.4)).not.toThrow();
     expect(manager.readCatalogScroll("?q=nix")).toBe(250);
+  });
+
+  it("keeps one offset per catalog view regardless of the ?compare= selection", () => {
+    const storage = createMemoryScrollStorage();
+    const { viewport, scrollCalls } = createFakeViewport();
+    const manager = createScrollManager(storage, viewport);
+
+    manager.rememberCatalogScroll(
+      "?q=arch&dim=gaming&sort=name&compare=arch-linux&compare=manjaro",
+      420,
+    );
+    manager.rememberCatalogScroll("?q=ubuntu", 980);
+
+    expect(manager.readCatalogScroll("?q=arch&dim=gaming&sort=name")).toBe(420);
+    expect(
+      manager.readCatalogScroll("?q=arch&dim=gaming&sort=name&compare=arch-linux"),
+    ).toBe(420);
+    expect(manager.readCatalogScroll("?q=ubuntu&compare=ubuntu")).toBe(980);
+    expect(manager.readCatalogScroll("?q=fedora")).toBeUndefined();
+
+    // Returning from /compare with a narrowed selection restores the saved offset.
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=arch&dim=gaming&sort=name&compare=manjaro",
+      hash: "",
+      state: { restoreCatalogScroll: true },
+      isPop: false,
+      previous: { pathname: "/compare", search: "?distros=manjaro" },
+    });
+    expect(scrollCalls).toEqual([[0, 420]]);
+  });
+
+  it("keeps the newest in-memory offset when storage writes are blocked but stale reads succeed", () => {
+    const backing = createMemoryScrollStorage();
+    const { viewport: staleViewport } = createFakeViewport();
+    createScrollManager(backing, staleViewport).rememberCatalogScroll(
+      "?q=arch",
+      120,
+    );
+
+    const blockedWrites: ScrollStorageAdapter = {
+      getItem: (key) => backing.getItem(key),
+      setItem: () => {
+        throw new Error("blocked");
+      },
+      removeItem: (key) => backing.removeItem(key),
+    };
+    const { viewport, scrollCalls } = createFakeViewport();
+    const manager = createScrollManager(blockedWrites, viewport);
+    manager.rememberCatalogScroll("?q=arch", 640);
+
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=arch",
+      hash: "",
+      state: { restoreCatalogScroll: true },
+      isPop: false,
+      previous: { pathname: "/compare", search: "?distros=arch-linux" },
+    });
+    expect(scrollCalls).toEqual([[0, 640]]);
+  });
+
+  it("keeps the sessionStorage-backed default working when a tab blocks writes", () => {
+    const persisted = new Map<string, string>();
+    const writableSessionStorage = {
+      getItem: (key: string) => persisted.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        persisted.set(key, value);
+      },
+      removeItem: (key: string) => {
+        persisted.delete(key);
+      },
+    };
+    vi.stubGlobal("window", { sessionStorage: writableSessionStorage });
+    createScrollManager(undefined, createFakeViewport().viewport).rememberCatalogScroll(
+      "?q=arch",
+      120,
+    );
+
+    // A policy change blocks writes but leaves stale reads available.
+    vi.stubGlobal("window", {
+      sessionStorage: {
+        ...writableSessionStorage,
+        setItem: () => {
+          throw new Error("blocked");
+        },
+      },
+    });
+    const { viewport, scrollCalls } = createFakeViewport();
+    const manager = createScrollManager(undefined, viewport);
+    expect(() => manager.rememberCatalogScroll("?q=arch", 640)).not.toThrow();
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=arch",
+      hash: "",
+      state: { restoreCatalogScroll: true },
+      isPop: false,
+      previous: { pathname: "/compare", search: "?distros=arch-linux" },
+    });
+    expect(scrollCalls).toEqual([[0, 640]]);
+  });
+
+  it("ignores corrupt or hostile persisted offsets instead of jumping to a bogus position", () => {
+    const hostileValues: ScrollStorageAdapter = {
+      getItem: () =>
+        JSON.stringify({
+          "?q=arch": -40,
+          "?q=ubuntu": "980",
+          "?q=debian": null,
+          "?q=fedora": 275.6,
+        }),
+      setItem: () => {},
+      removeItem: () => {},
+    };
+    const { viewport, scrollCalls } = createFakeViewport();
+    const manager = createScrollManager(hostileValues, viewport);
+
+    expect(manager.readCatalogScroll("?q=arch")).toBeUndefined();
+    expect(manager.readCatalogScroll("?q=ubuntu")).toBeUndefined();
+    expect(manager.readCatalogScroll("?q=debian")).toBeUndefined();
+    expect(manager.readCatalogScroll("?q=fedora")).toBe(276);
+
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=arch",
+      hash: "",
+      state: { restoreCatalogScroll: true },
+      isPop: false,
+      previous: { pathname: "/compare", search: "?distros=arch-linux" },
+    });
+    expect(scrollCalls).toEqual([[0, 0]]);
+  });
+
+  it("falls back to in-memory offsets when persisted scroll JSON cannot be parsed", () => {
+    const corruptStorage: ScrollStorageAdapter = {
+      getItem: () => "{not json",
+      setItem: () => {},
+      removeItem: () => {},
+    };
+    const { viewport, scrollCalls } = createFakeViewport();
+    const manager = createScrollManager(corruptStorage, viewport);
+
+    expect(() => manager.rememberCatalogScroll("?q=arch", 640)).not.toThrow();
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=arch&compare=arch-linux",
+      hash: "",
+      state: null,
+      isPop: true,
+      previous: { pathname: "/compare", search: "?distros=arch-linux" },
+    });
+    expect(scrollCalls).toEqual([[0, 640]]);
+  });
+
+  it("leaves in-route filter/sort updates and hash anchors naturally anchored", () => {
+    const { viewport, scrollCalls, setScrollY } = createFakeViewport(300);
+    const manager = createScrollManager(createMemoryScrollStorage(), viewport);
+
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=ubuntu",
+      hash: "",
+      state: null,
+      isPop: false,
+      previous: null,
+    });
+    setScrollY(520);
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=ubuntu&dim=gaming&sort=name&compare=ubuntu",
+      hash: "",
+      state: null,
+      isPop: false,
+      previous: { pathname: "/catalog", search: "?q=ubuntu" },
+    });
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=ubuntu&dim=gaming&sort=name&compare=ubuntu",
+      hash: "#choose-path",
+      state: null,
+      isPop: false,
+      previous: {
+        pathname: "/catalog",
+        search: "?q=ubuntu&dim=gaming&sort=name&compare=ubuntu",
+      },
+    });
+    expect(scrollCalls).toEqual([]);
+  });
+
+  it("restores only with an explicit true flag or POP, and resets other transitions to the top", () => {
+    const { viewport, scrollCalls } = createFakeViewport();
+    const manager = createScrollManager(createMemoryScrollStorage(), viewport);
+    manager.rememberCatalogScroll("?q=arch", 640);
+
+    const arrive = (
+      options: Partial<Parameters<typeof manager.handleRouteTransition>[0]>,
+    ) => {
+      manager.handleRouteTransition({
+        pathname: "/catalog",
+        search: "?q=arch",
+        hash: "",
+        state: null,
+        isPop: false,
+        previous: { pathname: "/compare", search: "?distros=arch-linux" },
+        ...options,
+      });
+    };
+
+    // Initial mount must not fight the browser's own scroll handling.
+    arrive({ previous: null });
+    expect(scrollCalls).toEqual([]);
+
+    // A truthy-but-not-true flag from tampered state does not restore.
+    arrive({ state: { restoreCatalogScroll: "true" } });
+    expect(scrollCalls).toEqual([[0, 0]]);
+
+    arrive({ state: { restoreCatalogScroll: true } });
+    expect(scrollCalls.at(-1)).toEqual([0, 640]);
+
+    // Browser Back restores with no link state at all.
+    arrive({ state: null, isPop: true });
+    expect(scrollCalls.at(-1)).toEqual([0, 640]);
+
+    // POP to another view and a fresh forward catalog visit both start at the top.
+    arrive({ pathname: "/methodology", isPop: true });
+    expect(scrollCalls.at(-1)).toEqual([0, 0]);
+    arrive({ state: undefined });
+    expect(scrollCalls.at(-1)).toEqual([0, 0]);
+  });
+
+  it("keeps a live-captured offset when the destination clamps the viewport", () => {
+    const storage = createMemoryScrollStorage();
+    const { viewport, scrollCalls, setScrollY } = createFakeViewport(0);
+    const manager = createScrollManager(storage, viewport);
+    manager.rememberCatalogScroll("?q=arch", 640);
+
+    // The catalog page was replaced by a shorter one before the transition ran.
+    setScrollY(35);
+    manager.handleRouteTransition({
+      pathname: "/compare",
+      search: "?distros=arch-linux",
+      hash: "",
+      state: null,
+      isPop: false,
+      previous: { pathname: "/catalog", search: "?q=arch" },
+      skipCapture: true,
+    });
+    expect(manager.readCatalogScroll("?q=arch")).toBe(640);
+    expect(scrollCalls).toEqual([[0, 0]]);
+
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=arch&compare=arch-linux",
+      hash: "",
+      state: { restoreCatalogScroll: true },
+      isPop: false,
+      previous: { pathname: "/compare", search: "?distros=arch-linux" },
+    });
+    expect(scrollCalls).toEqual([
+      [0, 0],
+      [0, 640],
+    ]);
+  });
+
+  it("captures the catalog offset when leaving via a hash link without scrolling", () => {
+    const { viewport, scrollCalls } = createFakeViewport(500);
+    const manager = createScrollManager(createMemoryScrollStorage(), viewport);
+    manager.handleRouteTransition({
+      pathname: "/",
+      search: "",
+      hash: "#choose-path",
+      state: null,
+      isPop: false,
+      previous: { pathname: "/catalog", search: "?q=arch" },
+    });
+    expect(scrollCalls).toEqual([]);
+    expect(manager.readCatalogScroll("?q=arch")).toBe(500);
+  });
+
+  it("restores the exact offset across Catalog -> Compare -> Detail -> Compare -> Catalog", () => {
+    const storage = createMemoryScrollStorage();
+    const { viewport, scrollCalls, setScrollY } = createFakeViewport(0);
+    const manager = createScrollManager(storage, viewport);
+    const catalogSearch =
+      "?q=ubuntu&dim=gaming&sort=name&compare=ubuntu&compare=debian";
+
+    const go = (
+      pathname: string,
+      search: string,
+      state: unknown,
+      previous: { pathname: string; search: string } | null,
+    ) => {
+      manager.handleRouteTransition({
+        pathname,
+        search,
+        hash: "",
+        state,
+        isPop: false,
+        previous,
+      });
+    };
+
+    go("/catalog", catalogSearch, null, null);
+    setScrollY(640);
+
+    const compareEntry = createCompareLinkState(catalogSearch);
+    go("/compare", "?distros=ubuntu,debian", compareEntry, {
+      pathname: "/catalog",
+      search: catalogSearch,
+    });
+    expect(scrollCalls).toEqual([[0, 0]]);
+
+    const fullCompare = resolveCompareNavigation(
+      compareEntry,
+      ["ubuntu", "debian"],
+      "?distros=ubuntu,debian",
+    );
+    const detail = resolveDetailNavigation(fullCompare.detailLinkState);
+    go("/distros/ubuntu", "", fullCompare.detailLinkState, {
+      pathname: "/compare",
+      search: "?distros=ubuntu,debian",
+    });
+
+    // Back to the comparison, then remove debian; filters must survive the rewrite.
+    go("/compare", "?distros=ubuntu", detail.backState, {
+      pathname: "/distros/ubuntu",
+      search: "",
+    });
+    const narrowed = resolveCompareNavigation(
+      detail.backState,
+      ["ubuntu"],
+      "?distros=ubuntu",
+    );
+    expect(narrowed.catalogBackPath).toBe(
+      "/catalog?q=ubuntu&dim=gaming&sort=name&compare=ubuntu",
+    );
+
+    const [backPathname, backSearch = ""] = narrowed.catalogBackPath.split("?");
+    go(backPathname, backSearch ? `?${backSearch}` : "", narrowed.catalogBackState, {
+      pathname: "/compare",
+      search: "?distros=ubuntu",
+    });
+    expect(scrollCalls.at(-1)).toEqual([0, 640]);
+  });
+
+  it("persists offsets through a storage adapter across a page reload", () => {
+    const storage = createMemoryScrollStorage();
+    expect(storage.getItem("key")).toBeNull();
+    storage.setItem("key", "value");
+    expect(storage.getItem("key")).toBe("value");
+    storage.removeItem("key");
+    expect(storage.getItem("key")).toBeNull();
+
+    createScrollManager(
+      storage,
+      createFakeViewport().viewport,
+    ).rememberCatalogScroll("?q=arch&dim=gaming", 640);
+
+    const reloaded = createScrollManager(storage, createFakeViewport().viewport);
+    expect(reloaded.readCatalogScroll("?q=arch&dim=gaming&compare=arch-linux")).toBe(
+      640,
+    );
+  });
+
+  it("scrolls route transitions instantly so CSS smooth scrolling cannot animate", () => {
+    const scrollTo = vi.fn();
+    vi.stubGlobal("window", { scrollY: 0, scrollTo });
+    const manager = createScrollManager(createMemoryScrollStorage());
+    manager.rememberCatalogScroll("?q=arch", 640);
+
+    manager.handleRouteTransition({
+      pathname: "/catalog",
+      search: "?q=arch",
+      hash: "",
+      state: { restoreCatalogScroll: true },
+      isPop: false,
+      previous: { pathname: "/compare", search: "?distros=arch-linux" },
+    });
+    expect(scrollTo).toHaveBeenCalledWith({
+      left: 0,
+      top: 640,
+      behavior: "instant",
+    });
+
+    manager.handleRouteTransition({
+      pathname: "/methodology",
+      search: "",
+      hash: "",
+      state: null,
+      isPop: false,
+      previous: { pathname: "/catalog", search: "?q=arch" },
+    });
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      left: 0,
+      top: 0,
+      behavior: "instant",
+    });
   });
 });
