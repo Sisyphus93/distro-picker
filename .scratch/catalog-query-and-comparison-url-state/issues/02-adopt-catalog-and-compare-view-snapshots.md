@@ -4,9 +4,9 @@
 
 **Blocked by:** 01: Unify catalog and comparison URL codec and selection rules
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] `resolveCatalogView` computes `state`, `results`, `totalCount`, `hasFilters`, `comparisonFull`, `prioritySummary`, and `toolbarSummary` from `URLSearchParams`, and `CatalogPage` + `CatalogToolbar` render directly from those fields without local filter/summary duplication.
-- [ ] `resolveCompareSelection` and `resolveCompareView` return `{ slugs, distros, remaining, isFull }`, removing duplicated `getDistrosBySlugs` and remaining-slot arithmetic from `ComparisonTray` and `ComparePage`.
-- [ ] `CatalogPage` and `ComparePage` use `toggleCompareSlug` and `removeCompareSlug` (plus `buildCompareSearchParams([])` on clear) instead of ad-hoc array `.filter(...)` removal, and `DistroCard`, `DistroDetailPage`, and `return-context` import cleanly from `catalog-state`.
-- [ ] Unit tests in `catalog-state.test.ts` cover `resolveCatalogView` across unfiltered, priority-filtered, search-only, and full-comparison states as well as `resolveCompareView` / `resolveCompareSelection`.
+- [x] `resolveCatalogView` computes `state`, `results`, `totalCount`, `hasFilters`, `comparisonFull`, `prioritySummary`, and `toolbarSummary` from `URLSearchParams`, and `CatalogPage` + `CatalogToolbar` render directly from those fields without local filter/summary duplication.
+- [x] `resolveCompareSelection` and `resolveCompareView` return `{ slugs, distros, remaining, isFull }`, removing duplicated `getDistrosBySlugs` and remaining-slot arithmetic from `ComparisonTray` and `ComparePage`.
+- [x] `CatalogPage` and `ComparePage` use `toggleCompareSlug` and `removeCompareSlug` (plus `buildCompareSearchParams([])` on clear) instead of ad-hoc array `.filter(...)` removal, and `DistroCard`, `DistroDetailPage`, and `return-context` import cleanly from `catalog-state`.
+- [x] Unit tests in `catalog-state.test.ts` cover `resolveCatalogView` across unfiltered, priority-filtered, search-only, and full-comparison states as well as `resolveCompareView` / `resolveCompareSelection`.
