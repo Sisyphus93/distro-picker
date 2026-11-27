@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] `normalizeComparisonSelection`, `toggleCompareSlug`, and `removeCompareSlug` enforce the three-distro cap, drop unknown or duplicate slugs, preserve picking order, and allow removal even when full.
-- [ ] `parseCatalogViewState` and `buildCatalogViewSearchParams` reuse shared `dimensionRank` ordering instead of a local `byDimensionOrder` helper, trim/cap search terms, omit defaults cleanly, and reject unknown dimensions or sort keys.
-- [ ] `parseCompareSlugs`, `buildCompareSearchParams`, `buildComparePath`, and `buildCatalogComparePath` parse both comma-separated and repeated `?distros=` params and route all `/catalog?...&compare=...` generation through `parseCatalogViewState` + `buildCatalogViewSearchParams` so dirty `catalogSearch` parameters are sanitized consistently.
-- [ ] `catalog-search.ts`, `compare-search.ts`, `domain/comparison.ts`, and their separate test files are deleted (with `domain/index.ts` updated), and `catalog-state.test.ts` covers comparison selection rules, catalog URL round-trips, and `?distros=` / `?compare=` path building.
+- [x] `normalizeComparisonSelection`, `toggleCompareSlug`, and `removeCompareSlug` enforce the three-distro cap, drop unknown or duplicate slugs, preserve picking order, and allow removal even when full.
+- [x] `parseCatalogViewState` and `buildCatalogViewSearchParams` reuse shared `dimensionRank` ordering instead of a local `byDimensionOrder` helper, trim/cap search terms, omit defaults cleanly, and reject unknown dimensions or sort keys.
+- [x] `parseCompareSlugs`, `buildCompareSearchParams`, `buildComparePath`, and `buildCatalogComparePath` parse both comma-separated and repeated `?distros=` params and route all `/catalog?...&compare=...` generation through `parseCatalogViewState` + `buildCatalogViewSearchParams` so dirty `catalogSearch` parameters are sanitized consistently.
+- [x] `catalog-search.ts`, `compare-search.ts`, `domain/comparison.ts`, and their separate test files are deleted (with `domain/index.ts` updated), and `catalog-state.test.ts` covers comparison selection rules, catalog URL round-trips, and `?distros=` / `?compare=` path building.
